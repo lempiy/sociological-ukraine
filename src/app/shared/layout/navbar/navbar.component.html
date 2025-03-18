@@ -1,0 +1,20 @@
+<div class="navbar-container">
+  <div class="logo">
+    <a [routerLink]="['/']">Соціологічна Україна</a>
+  </div>
+  <div class="user-container" *ngIf="user$ | async as user; else loginButton">
+    <div class="user-info" [routerLink]="['/profile']">
+      <img
+        [src]="user.photoURL || 'assets/images/default-avatar.png'"
+        alt="Аватар користувача"
+        class="user-avatar"
+      />
+      <span class="user-name">{{ user.displayName }}</span>
+    </div>
+  </div>
+  <ng-template #loginButton>
+    <button nbButton status="primary" (click)="login()">
+      Увійти через Google
+    </button>
+  </ng-template>
+</div>

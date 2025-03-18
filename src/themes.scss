@@ -1,0 +1,97 @@
+@import "@nebular/theme/styles/theming";
+@import "@nebular/theme/styles/themes/default";
+
+// Основна українська кольорова палітра
+$ukraine-primary: #3366ff; // Синій
+$ukraine-accent: #ffcc00; // Жовтий
+$ukraine-success: #2ecc71; // Зелений
+$ukraine-info: #45aaf2; // Світло-синій
+$ukraine-warning: #f1c40f; // Жовтий
+$ukraine-danger: #e74c3c; // Червоний
+
+$nb-themes: nb-register-theme(
+  (
+    color-primary-100: #e6ecff,
+    color-primary-200: #b3c6ff,
+    color-primary-300: #80a0ff,
+    color-primary-400: #4d7aff,
+    color-primary-500: $ukraine-primary,
+    color-primary-600: #284fd9,
+    color-primary-700: #1f39b3,
+    color-primary-800: #15248d,
+    color-primary-900: #0c1366,
+
+    color-success-100: #e4f9e9,
+    color-success-200: #bfefcf,
+    color-success-300: #99e5b5,
+    color-success-400: #74db9b,
+    color-success-500: $ukraine-success,
+    color-success-600: #27ae60,
+    color-success-700: #209150,
+    color-success-800: #197340,
+    color-success-900: #105430,
+
+    color-info-100: #ebf5fc,
+    color-info-200: #cce6f7,
+    color-info-300: #add7f3,
+    color-info-400: #8ec8ee,
+    color-info-500: $ukraine-info,
+    color-info-600: #3b91cc,
+    color-info-700: #3177aa,
+    color-info-800: #275e88,
+    color-info-900: #1d4566,
+
+    color-warning-100: #fef9e6,
+    color-warning-200: #fcf0b3,
+    color-warning-300: #fae680,
+    color-warning-400: #f9dd4d,
+    color-warning-500: $ukraine-warning,
+    color-warning-600: #cda70c,
+    color-warning-700: #aa8a0a,
+    color-warning-800: #866d08,
+    color-warning-900: #635006,
+
+    color-danger-100: #fbedeb,
+    color-danger-200: #f5cdc9,
+    color-danger-300: #efada7,
+    color-danger-400: #e98d85,
+    color-danger-500: $ukraine-danger,
+    color-danger-600: #c44133,
+    color-danger-700: #a1352a,
+    color-danger-800: #7e2921,
+    color-danger-900: #5b1d18,
+
+    // Загальна кольорова схема
+    text-basic-color: #2e3a59,
+    text-disabled-color: #8f9bb3,
+    background-basic-color-1: #ffffff,
+    background-basic-color-2: #f7f9fc,
+    background-basic-color-3: #edf1f7,
+    background-basic-color-4: #e4e9f2,
+
+    // Кольори кнопок
+    button-filled-primary-focus-background-color: #274bdb,
+    button-filled-primary-hover-background-color: #1a3ff4,
+    button-filled-primary-active-background-color: #274bdb,
+
+    button-filled-success-focus-background-color: #27ae60,
+    button-filled-success-hover-background-color: #29b968,
+    button-filled-success-active-background-color: #27ae60,
+
+    // Тіні
+    shadow: 0 0.5rem 1rem 0 rgba(44, 51, 73, 0.1),
+    shadow-hover: 0 0.5rem 1rem 0 rgba(44, 51, 73, 0.15),
+    // Шрифти
+    font-family-primary: "Open Sans, sans-serif",
+    font-family-secondary: "Raleway, sans-serif",
+
+    // Заокруглення кутів
+    border-radius: 0.5rem,
+
+    // Анімації
+    animation-duration: 0.2s,
+    animation-easing: ease-out,
+  ),
+  default,
+  default
+);

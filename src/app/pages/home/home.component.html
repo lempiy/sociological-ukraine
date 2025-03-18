@@ -1,0 +1,56 @@
+<div class="home-container">
+  <div class="content-container">
+    <h1 class="title">Соціологічна Україна</h1>
+    <p class="description">
+      Мультиплеєрна гра-вікторина на соціологічну тематику, де гравці змагаються
+      за контроль над регіонами України, відповідаючи на запитання про
+      соціологічні дані.
+    </p>
+
+    <div class="buttons-container">
+      <button
+        nbButton
+        status="primary"
+        size="large"
+        [routerLink]="['/create-game']"
+        [disabled]="!(isAuthenticated$ | async)"
+      >
+        Створити гру
+      </button>
+
+      <button
+        nbButton
+        status="info"
+        size="large"
+        [routerLink]="['/join-game']"
+        [disabled]="!(isAuthenticated$ | async)"
+      >
+        Приєднатися
+      </button>
+
+      <button
+        nbButton
+        status="warning"
+        size="large"
+        [routerLink]="['/game-rules']"
+      >
+        Правила
+      </button>
+    </div>
+
+    <div class="auth-message" *ngIf="!(isAuthenticated$ | async)">
+      <nb-alert status="info">
+        Для створення або приєднання до гри необхідно увійти в систему через
+        Google
+      </nb-alert>
+    </div>
+  </div>
+
+  <div class="ukraine-map-container">
+    <img
+      src="assets/images/ukraine-map-outline.svg"
+      alt="Карта України"
+      class="ukraine-map"
+    />
+  </div>
+</div>

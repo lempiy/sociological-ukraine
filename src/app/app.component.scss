@@ -1,0 +1,23 @@
+.footer-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 1rem;
+  text-align: center;
+  color: #8f9bb3;
+  font-size: 0.875rem;
+}
+
+// Видаляємо зайві відступи стандартного Nebular Layout
+::ng-deep nb-layout.p-0 .layout {
+  .layout-container {
+    .content {
+      .columns {
+        nb-layout-column.p-0 {
+          padding: 0 !important;
+        }
+      }
+    }
+  }
+}
