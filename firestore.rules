@@ -8,18 +8,17 @@ service cloud.firestore {
     
     match /games/{gameId} {
       allow read;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && resource.data.creatorId == request.auth.uid;
+      allow write: if false;
     }
     
     match /maps/{mapId} {
       allow read;
-      allow write: if false;  // Всі зміни через Cloud Functions
+      allow write: if false; 
     }
     
     match /questions/{questionId} {
       allow read;
-      allow write: if false;  // Всі зміни через Cloud Functions
+      allow write: if false; 
     }
   }
 }

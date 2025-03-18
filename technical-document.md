@@ -1,0 +1,2276 @@
+# Технічний документ для гри "Соціологічна Україна"
+
+## 1. Загальні технології, платформи і бібліотеки, що застосовуватимуться у грі.
+
+- **Firebase/Firestore** - для бази даних, з read інтерфейсом для гравців з realtime оновленнями
+- **Firebase Authentication** - для авторизації через Google
+- **Angular і Angular CLI** - як основний фреймворк для інтерфейсу
+- **Nebular** - UI бібліотека для Angular з готовими компонентами
+- **Cloud Functions for Firebase** - бекенд інтерфейс через який здійснюватимуться усі write операції від гравців
+- **D3.js** - для відмалювання карти на основі наявного geojson з картою України та її регіонами
+
+### Процес створення проекту з нуля
+
+#### 1. Налаштування середовища розробки
+1. Встановити Node.js та npm: 
+   ```bash
+   # Перевірити наявність Node.js
+   node -v
+   npm -v
+   
+   # Якщо не встановлено, завантажити з https://nodejs.org/
+   ```
+
+2. Встановити Angular CLI:
+   ```bash
+   npm install -g @angular/cli
+   ```
+
+3. Встановити Firebase CLI:
+   ```bash
+   npm install -g firebase-tools
+   ```
+
+#### 2. Створення проекту Firebase
+1. Увійти в обліковий запис Firebase:
+   ```bash
+   firebase login
+   ```
+
+2. Створити новий проект у Firebase Console (https://console.firebase.google.com/):
+   - Натиснути "Додати проект"
+   - Ввести назву проекту "СоціологічнаУкраїна"
+   - Вибрати налаштування Google Analytics (за бажанням)
+   - Натиснути "Створити проект"
+
+3. Активувати потрібні сервіси Firebase:
+   - **Firestore Database** (НЕ Realtime Database): вибираємо Firestore, оскільки він має більше можливостей для складних запитів, кращу масштабованість і краще підходить для ієрархічних даних нашої гри
+   - **Authentication**: увімкнути ЛИШЕ метод автентифікації через Google. Інші методи автентифікації (Email/Password, Phone, Facebook, Twitter тощо) не підтримуються в цій версії додатку
+   - Storage: налаштувати для зберігання файлів
+   - Functions: активувати для серверних функцій
+
+#### 3. Створення Angular проекту
+1. Створити новий проект Angular:
+   ```bash
+   ng new sociological-ukraine --routing --style=scss
+   cd sociological-ukraine
+   ```
+
+2. Додати Firebase до Angular проекту:
+   ```bash
+   ng add @angular/fire
+   ```
+   
+3. Під час налаштування вибрати потрібні сервіси Firebase:
+   - Firestore
+   - Authentication
+   - Functions
+   - Storage
+
+4. Додати та налаштувати Nebular:
+   ```bash
+   ng add @nebular/theme
+   ```
+
+5. Встановити D3.js:
+   ```bash
+   npm install d3
+   npm install @types/d3 --save-dev
+   ```
+
+#### 4. Налаштування Firebase проекту
+1. Ініціалізувати Firebase у проекті:
+   ```bash
+   firebase init
+   ```
+   
+2. Вибрати сервіси:
+   - Firestore
+   - Functions
+   - Hosting
+   - Storage
+   - Emulators (для локального тестування)
+
+3. Налаштувати правила безпеки для Firestore в файлі `firestore.rules`:
+   ```
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /users/{userId} {
+         allow read;
+         allow write: if request.auth != null && request.auth.uid == userId;
+       }
+       
+       match /games/{gameId} {
+         allow read;
+         allow create: if request.auth != null;
+         allow update, delete: if request.auth != null && resource.data.creatorId == request.auth.uid;
+       }
+       
+       match /regions/{regionId} {
+         allow read;
+         allow write: if false;  // Всі зміни через Cloud Functions
+       }
+       
+       match /questions/{questionId} {
+         allow read;
+         allow write: if false;  // Всі зміни через Cloud Functions
+       }
+     }
+   }
+   ```
+
+#### 5. Розробка Cloud Functions
+1. Налаштувати середовище для Cloud Functions:
+   ```bash
+   cd functions
+   npm install firebase-admin firebase-functions
+   ```
+
+2. Створити базові функції:
+   ```javascript
+   // index.js в папці functions
+   const functions = require('firebase-functions');
+   const admin = require('firebase-admin');
+   admin.initializeApp();
+   
+   // Функція для обробки ходу гравця
+   exports.makeMove = functions.https.onCall(async (data, context) => {
+     // Перевірка аутентифікації
+     if (!context.auth) {
+       throw new functions.https.HttpsError('unauthenticated', 'Потрібна аутентифікація');
+     }
+     
+     // Логіка ходу гравця
+     // ...
+     
+     return { success: true };
+   });
+   
+   // Інші функції для гри
+   // ...
+   ```
+
+#### 6. Імпорт даних у Firestore
+1. Підготувати файли з початковими даними:
+   - GeoJSON карта України
+   - Питання для вікторини
+
+2. Отримати service-account-key.json:
+   - Перейдіть до Firebase Console: https://console.firebase.google.com/
+   - Виберіть ваш проект
+   - Перейдіть до "Налаштування проекту" (шестерня у лівому меню)
+   - Перейдіть до вкладки "Облікові записи сервісу"
+   - Натисніть "Створити новий приватний ключ" для Firebase Admin SDK
+   - Завантажте згенерований JSON-файл і перейменуйте його на "service-account-key.json"
+   - Збережіть цей файл у безпечному місці (НЕ додавайте його до репозиторію, додайте в .gitignore)
+   - Перемістіть файл у папку "scripts" вашого проекту
+
+3. Створити скрипт для імпорту GeoJSON як рядка та запитань:
+   ```javascript
+   // scripts/import-data.js
+   const admin = require('firebase-admin');
+   const fs = require('fs');
+   const serviceAccount = require('./service-account-key.json');
+   
+   admin.initializeApp({
+     credential: admin.credential.cert(serviceAccount)
+   });
+   
+   const db = admin.firestore();
+   
+   async function importData() {
+     try {
+       // Зчитуємо GeoJSON файл як рядок
+       const geoJsonString = fs.readFileSync('./data/ukraine.geojson', 'utf8');
+       
+       // Зберігаємо GeoJSON як єдиний документ з id 'ukraine'
+       await db.collection('maps').doc('ukraine').set({
+         id: 'ukraine',
+         geoJson: geoJsonString,
+         updatedAt: admin.firestore.FieldValue.serverTimestamp()
+       });
+       
+       console.log('GeoJSON карта успішно імпортована');
+       
+       // Зчитуємо запитання з JSON файлу
+       const questionsRaw = fs.readFileSync('./data/questions.json', 'utf8');
+       const questions = JSON.parse(questionsRaw);
+       
+       // Імпорт запитань
+       const batch = db.batch();
+       
+       questions.forEach((question) => {
+         const questionRef = db.collection('questions').doc();
+         batch.set(questionRef, {
+           ...question,
+           createdAt: admin.firestore.FieldValue.serverTimestamp()
+         });
+       });
+       
+       await batch.commit();
+       console.log(`Імпортовано ${questions.length} запитань`);
+       
+     } catch (error) {
+       console.error('Помилка імпорту даних:', error);
+     }
+   }
+   
+   importData().catch(console.error);
+   ```
+
+4. Запуск скрипту імпорту:
+   ```bash
+   # Перейти в папку scripts
+   cd scripts
+   
+   # Встановити залежності, якщо вони ще не встановлені
+   npm init -y
+   npm install firebase-admin fs
+   
+   # Запустити скрипт
+   node import-data.js
+   ```
+
+   Примітка: Перед запуском переконайтеся, що:
+   - Файл service-account-key.json знаходиться в тій же папці, що й скрипт
+   - У вас є файл ukraine.geojson в папці scripts/data/
+   - У вас є файл questions.json з питаннями в папці scripts/data/
+
+#### 7. Тестування проекту локально
+1. Запустити локальний сервер Angular:
+   ```bash
+   ng serve
+   ```
+
+2. Запустити емулятори Firebase:
+   ```bash
+   firebase emulators:start
+   ```
+
+#### 8. Деплой проекту
+1. Зібрати проект Angular:
+   ```bash
+   ng build --prod
+   ```
+
+2. Розгорнути проект на Firebase Hosting:
+   ```bash
+   firebase deploy
+   ```
+
+3. Проект стає доступним за URL: https://sociological-ukraine.web.app
+
+#### 9. Моніторинг та оновлення
+1. Налаштувати Firebase Performance Monitoring для відстеження продуктивності
+2. Налаштувати Firebase Crashlytics для відстеження помилок
+3. Регулярно оновлювати залежності проекту:
+   ```bash
+   npm update
+   ```
+
+## 2. Загальний опис основних екранів гри.
+
+### 2.0. Загальні елементи інтерфейсу для всіх екранів
+
+#### Навігаційна панель (Navbar)
+На всіх екранах додатку відображається навігаційна панель у верхній частині, яка містить:
+
+- **Логотип/назву гри** - розташований у лівій частині панелі
+- **Інформація про користувача** - розташована у правій частині панелі:
+  - Аватарка користувача
+  - Ім'я користувача (юзернейм)
+  - При натисканні на аватарку або ім'я відбувається перехід на сторінку профілю користувача
+- **Для неавторизованих користувачів**:
+  - Замість аватарки та імені відображається кнопка "Увійти через Google"
+
+Навігаційна панель забезпечує єдиний стиль інтерфейсу та дозволяє користувачу завжди бачити свій статус авторизації та мати швидкий доступ до профілю.
+
+### 2.1. Екран Головного меню.
+**Роут:** `/`
+
+На головному екрані є 3 кнопки:
+
+- **Основні кнопки**:
+  - **Створити гру** - дозволяє створити нову ігрову сесію
+  - **Приєднатися** - дозволяє приєднатися до існуючої гри
+  - **Правила** - відображає правила гри
+
+- **Стан для неавторизованих користувачів**:
+  - Кнопки "Створити гру" та "Приєднатися" неактивні (disabled)
+  - При завантаженні сторінки може автоматично з'являтися запит на авторизацію через Google
+
+### 2.2. Екран Правил.
+**Роут:** `/game-rules`
+
+Сторінка, на якій в доступній формі розкрито зміст геймдоку, тобто правил гри. Екран має містити:
+
+- **Загальний опис гри** - коротке пояснення мети та концепції гри
+- **Правила гри** - детальний опис ігрового процесу:
+  - Як починається гра
+  - Як здійснюються ходи
+  - Як відбуваються дуелі між гравцями
+  - Умови перемоги та поразки
+- **Інтерфейс** - пояснення основних елементів ігрового інтерфейсу
+- **Кнопка повернення** - можливість повернутися до головного меню
+
+### 2.3. Екран профілю.
+**Роут:** `/profile`
+
+Захищений AuthGuard - при спробі доступу неавторизованих користувачів відбувається перенаправлення на головне меню.
+
+Структура екрану:
+- **Інформація про користувача**:
+  - Розташована по центру екрану
+  - Відображає дані, отримані від Google (ім'я, email тощо)
+  - Показує аватарку користувача
+- **Кнопка "Вийти з профілю"**:
+  - Розташована під інформацією про користувача, по центру
+  - При натисканні виконує вихід з профілю (sign out) і перенаправляє користувача на головне меню
+
+### 2.4. Екран Створення гри.
+**Роут:** `/create-game`
+
+Захищений AuthGuard - при спробі доступу неавторизованих користувачів відбувається перенаправлення на головне меню.
+
+На цей екран можна потрапити, натиснувши кнопку "Створити гру" в головному меню.
+
+Екран містить форму з налаштуваннями нової гри:
+
+- **Поля форми**:
+  - **Назва гри** - текстове поле введення (text input)
+  - **Кількість гравців** - група радіо-кнопок (radio button) з варіантами від 1 до 6
+  - **Час на відповідь** - випадаючий список (select input) з варіантами: 10, 20, 30 секунд
+  - **Час на планування** - випадаючий список (select input) з варіантами: 1 хв, 2 хв, 3 хв
+
+- **Кнопки керування**:
+  - **ОК** - запускає Cloud Function `createGame` з даними форми, очікує відповідь у вигляді `gameId`, після чого здійснює перехід на роут `game/{gameId}`
+  - **Відміна** - повертає користувача на головне меню без створення гри
+
+### 2.5. Екран Приєднання до гри.
+**Роут:** `/join-game`
+
+На цей екран можна потрапити неавторизованим користувачам. Якщо користувач не увійшов у систему, він може авторизуватися через кнопку в Navbar, не залишаючи цей екран.
+
+Структура екрану:
+- **Поле введення коду**:
+  - Розташоване по центру екрану
+  - Текстове поле (text input) для введення 4-цифрового коду приєднання до гри
+  - Якщо в URL присутній query-параметр `code=XXXX`, поле автоматично заповнюється цим значенням
+
+- **Кнопка "Приєднатися"**:
+  - Розташована під полем введення коду
+  - Неактивна (disabled), якщо користувач не авторизований
+  - При натисканні викликає Cloud Function `joinGame` з передачею введеного коду
+  - Очікує відповідь у вигляді `gameId`
+  - Після отримання відповіді здійснює перехід на роут `game/{gameId}`
+
+- **Кнопка "Головне меню"**:
+  - Розташована під кнопкою "Приєднатися"
+  - При натисканні повертає користувача на головне меню
+
+### 2.6. Екран Гри.
+**Роут:** `game/{gameId}`
+
+Захищений AuthGuard - при спробі доступу неавторизованих користувачів відбувається перенаправлення на головне меню.
+
+#### Ініціалізація екрану
+
+При заході на сторінку, компонент здійснює ряд операцій з Firebase:
+1. Дістає актуальний стан гри з колекції games за вказаним gameId
+2. Підписується на зміни документа games/{gameId} для реал-тайм оновлень
+3. Дістає з колекції maps GeoJSON дані за ID карти, отриманим з документа гри (games.map)
+4. Відмальовує інтерфейс гри на основі ігрового стану та ігрову карту
+
+На час завантаження даних відображається спіннер по центру екрану.
+
+#### Компоненти інтерфейсу
+
+1. **Список учасників (лідерборд)**:
+   - Розташований під Navbar'ом
+   - Відображає гравців у вигляді chips, відсортованих за кількістю зафарбованих регіонів
+   - Кожен chip містить:
+     - Аватарку гравця
+     - Ім'я користувача (юзернейм)
+     - Кількість зафарбованих регіонів
+   - Кожному гравцю призначено унікальний колір для зафарбовування регіонів (отримується з документа гри)
+   - Chip гравця-клієнта виділяється золотим бордером
+
+2. **Таймер планування**:
+   - Відображається під компонентом лідерборду
+   - Видимий, коли будь-який гравець вибирає регіон для зафарбовування
+   - Час вираховується як: `game.rules.timeForPlanningSec - (time.now() - game.currentPhase.timeStarted)`
+   - Таймер не може бути меншим за 0
+
+3. **Інтерактивна карта України**:
+   - Відмальовується за допомогою D3.js на основі GeoJSON даних
+   - Регіони зафарбовуються відповідно до їх поточної належності гравцям
+   - Клік на регіон опонента або нейтральний регіон дозволяє спробувати його зафарбувати (якщо зараз хід гравця-клієнта)
+
+4. **Каунтер раундів**:
+   - Відображає інформацію про поточний раунд гри
+   - Отримує дані з документа гри (`game.currentRound`)
+
+5. **Таймлайн черги ходів**:
+   - Відображає послідовність ходів:
+     - 2 попередні ходи
+     - 1 поточний хід (виділений зеленим бордером, завжди по центру)
+     - 2 майбутні ходи
+   - Кожен хід представлений карткою, що містить:
+     - Нікнейм гравця (зверху)
+     - Аватарку гравця (по центру)
+     - Номер раунду (знизу)
+
+6. **Вікно питання**:
+   - Активне, коли гра знаходиться в стадії відповіді на запитання
+   - Структура вікна:
+     - У першій стрічці: назва регіону (зліва) та кнопки навігації вікна (справа)
+     - По центру: текст питання (`game.currentPhase.question.text`)
+     - Нижче: варіанти відповіді (якщо `question.type == variant`) або числове поле введення з кнопкою "Відповісти" (якщо `question.type == number`)
+     - Таймер часу на відповідь: `game.rules.timeForAnswerSec - (time.now() - game.currentPhase.timeStarted)`
+     - Progress bar для візуалізації залишку часу на відповідь
+
+### 2.7. Екран результатів гри.
+**Роут:** `game/{gameId}/result`
+
+Захищений AuthGuard - при спробі доступу неавторизованих користувачів відбувається перенаправлення на головне меню.
+
+#### Ініціалізація екрану
+
+При заході на сторінку, компонент здійснює ряд операцій з Firebase:
+1. Дістає актуальний стан гри з колекції games за вказаним gameId
+2. Перевіряє стан гри - якщо `game.state !== 'finished'`, то перенаправляє на сторінку гри `game/{gameId}`
+3. Дістає з колекції maps GeoJSON дані за ID карти, отриманим з документа гри (games.map)
+4. Відмальовує статичну (неінтерактивну) карту України з зафарбованими регіонами відповідно до їх фінальної належності гравцям
+
+#### Компоненти інтерфейсу
+
+1. **Карта результатів**:
+   - Відмальовує статичну карту України з зафарбованими регіонами
+   - Кожен регіон має колір гравця, якому він належить у фінальному стані гри
+
+2. **Повідомлення про перемогу** (умовне відображення):
+   - Розташоване між картою та таблицею результатів
+   - Відображається тільки якщо гравець-клієнт переміг (займає перше місце в таблиці)
+   - Містить урочистий текст: "Вітаю, ви переможець!"
+
+3. **Таблиця результатів**:
+   - Розташована під картою (та повідомленням про перемогу, якщо воно є)
+   - Відображає список гравців, відсортований за кількістю зафарбованих регіонів (від найбільшого до найменшого)
+   - Для кожного гравця показує:
+     - Аватарку
+     - Ім'я користувача (юзернейм)
+     - Кількість зафарбованих регіонів
+   - Рядок з гравцем-клієнтом виділяється золотим кольором для швидкої ідентифікації
+
+4. **Кнопка "Повернутися в головне меню"**:
+   - Розташована в нижній частині екрану
+   - При натисканні перенаправляє користувача на головне меню
+
+### 2.8. Екран Лоббі.
+**Роут:** `game/{gameId}/lobby`
+
+Захищений AuthGuard - при спробі доступу неавторизованих користувачів відбувається перенаправлення на головне меню.
+
+#### Ініціалізація екрану
+
+При заході на сторінку, компонент здійснює ряд операцій з Firebase:
+1. Дістає актуальний стан гри з колекції games за вказаним gameId
+2. Перевіряє стан гри - якщо `game.status !== 'lobby'`, то перенаправляє на сторінку гри `game/{gameId}`
+3. Підписується на зміни документа games/{gameId} для реал-тайм оновлень
+
+На час завантаження даних відображається спіннер по центру екрану.
+
+#### Компоненти інтерфейсу
+
+1. **Список підключених гравців**:
+   - Відображає всіх гравців, які вже підключилися до гри
+   - Для кожного гравця показує:
+     - Аватарку
+     - Ім'я користувача (юзернейм)
+   - Також відображає пусті слоти для гравців, які ще не підключились
+   - Кількість очікуваних гравців визначається полем `game.rules.numberOfPlayers`
+
+2. **Кнопка "Покинути гру"**:
+   - Розташована в нижній частині екрану
+   - При натисканні викликає Cloud Function `leaveGame`
+   - Після успішного виконання перенаправляє користувача на головне меню
+
+#### Поведінка
+
+- Коли кількість підключених гравців досягає значення `game.rules.numberOfPlayers`, всі учасники автоматично перенаправляються на екран гри `game/{gameId}`
+- Система в реальному часі оновлює список гравців та їх статуси завдяки підписці на зміни документа
+
+## 3. Детальний опис структури бази даних.
+
+База даних Firestore для гри "Соціологічна Україна" складається з 4 колекцій:
+- maps
+- users
+- games
+- questions
+
+### 3.0. Статуси гри та ходів
+
+#### Статуси гри
+
+Поле `game.status` може мати наступні значення:
+
+| Статус | Опис |
+|--------|------|
+| lobby | Стадія очікування гравців перед початком гри |
+| running | Активна стадія гри, гравці по черзі роблять ходи |
+| finished | Кінець гри, визначено переможця |
+| skipped | Гра відмінена, оскільки всі гравці пропустили свій хід (для кожного сплив таймер) |
+
+#### Статуси ходу (phase)
+
+Поле `game.currentPhase.status` може мати наступні значення:
+
+| Статус | Опис |
+|--------|------|
+| planning | Стадія планування ходу. Гравець має виділений час (rules.timeForPlanning), щоб вибрати регіон для зафарбування. Закінчується, коли гравець вибрав регіон. Якщо час сплив і гравець не встиг вибрати регіон, хід переходить до наступного в черзі гравця (змінюється currentPhase). |
+| post-planning | Настає після того, як гравець вибрав регіон. Невелика пауза тривалістю rules.timeForPostPlanning секунд, щоб гравці зрозуміли, що відбувається. |
+| answer | Стадія відповіді на питання. Якщо це боротьба за нейтральну територію, активний гравець має виділений час (rules.timeForAnswer), щоб вибрати варіант відповіді. Якщо це оспорюваний (contested) регіон, ОБИДВА гравці мають час для надання числової відповіді. Закінчується, коли всі гравці дали відповідь або час вичерпався. Якщо гравець не встиг дати відповідь, це рахується як неправильна відповідь. Якщо це contested регіон і обидва гравці не встигли дати відповідь, це вважається поразкою того, хто нападав. |
+| post-answer | Настає після того, як всі необхідні гравці дали відповідь (один гравець при боротьбі за нейтральну зону і два при боротьбі за contested регіон). Невелика пауза тривалістю rules.timeForPostAnswer секунд, щоб гравці зрозуміли результат. |
+| skipped | Гравець пропустив свій хід на стадії planning. Настає, коли спливає час (rules.timeForPlanning) і гравець не зробив вибір регіону. Після цього хід автоматично переходить до наступного гравця. |
+
+Колекція `maps` зберігає геокарти для ігрової карти. На даний момент у базі даних передбачена лише одна вбудована карта - України з регіонами.
+
+**Структура документа:**
+
+| Поле | Тип | Опис |
+|------|-----|------|
+| id | string | Унікальний ідентифікатор карти |
+| geoJson | string | GeoJSON дані карти у форматі рядка |
+| updatedAt | datetime | Дата і час останнього оновлення |
+
+### 3.2. Колекція users
+
+Колекція `users` зберігає інформацію про користувачів системи. На даний момент колекція містить мінімальний набір даних, але в майбутньому може бути розширена для зберігання історії ігор та персональних налаштувань.
+
+**Структура документа:**
+
+| Поле | Тип | Опис |
+|------|-----|------|
+| id | string | Унікальний ідентифікатор користувача |
+| updatedAt | datetime | Дата і час останнього оновлення |
+
+### 3.3. Колекція questions
+
+Колекція `questions` зберігає запитання для вікторини, які використовуються під час гри.
+
+**Структура документа:**
+
+| Поле | Тип | Опис |
+|------|-----|------|
+| id | string | Унікальний ідентифікатор запитання |
+| type | string | Тип запитання: "variant" (з варіантами відповідей) або "number" (числова відповідь) |
+| subjectId | string | Ідентифікатор області України, якої стосується запитання, або "*" для загальних питань по соціології України |
+| text | string | Текст запитання |
+| imageUrl | string | (Опціонально) URL зображення, що стосується запитання |
+| variants | array | Масив об'єктів варіантів відповідей (заповнюється, якщо type = "variant") |
+| variants[].id | number | Ідентифікатор варіанту відповіді |
+| variants[].text | string | Текст варіанту відповіді |
+| variants[].imageUrl | string | (Опціонально) URL зображення для варіанту відповіді |
+| variants[].isCorrect | boolean | Прапорець, що вказує, чи є цей варіант правильною відповіддю |
+| numberAnswer | object | Об'єкт відповіді для числових запитань (заповнюється, якщо type = "number") |
+| numberAnswer.value | number | Числове значення правильної відповіді |
+| numberAnswer.units | string | Одиниці вимірювання (наприклад, "%", "тис. чоловік") |
+| updatedAt | datetime | Дата і час останнього оновлення запитання |
+| createdAt | datetime | Дата і час створення запитання |
+
+**Індекси:**
+- type ASC, subjectId ASC - для швидкого пошуку питань за типом та регіоном
+
+### 3.4. Колекція games
+
+Основна колекція гри, на яку підписуються гравці та глядачі. З неї отримуються дані для відображення ігрового процесу в реальному часі.
+
+**Структура документа:**
+
+| Поле | Тип | Опис |
+|------|-----|------|
+| id | string | Унікальний ідентифікатор гри |
+| map | object | Об'єкт карти з інформацією для відображення |
+| joinCode | number | 4 значне число для приєднання до гри |
+| map.id | string | Ідентифікатор карти |
+| map.updatedAt | datetime | Дата і час останнього оновлення карти |
+| map.status | map[string]string | Об'єкт, де ключ - ID регіону, а значення - ID гравця, який контролює регіон (пуста строка для нейтральних регіонів) |
+| players | array | Масив з інформацією про гравців |
+| players[].id | string | Ідентифікатор гравця |
+| players[].avatarUrl | string | URL аватарки гравця |
+| players[].color | string | Колір гравця в HEX форматі |
+| players[].isCreator | boolean | Прапорець, чи є гравець ініціатором створення гри |
+| players[].isWinner | boolean | Прапорець, чи є гравець переможцем гри |
+| moves | array | Масив, що описує послідовність ходів (минулих, поточного та майбутніх). Завжди містить 3-5 елементів. |
+| moves[].playerId | string | Ідентифікатор гравця, хто здійснив/здійснюватиме хід |
+| moves[].round | number | Номер раунду |
+| rules | object | Об'єкт правил гри |
+| rules.timeForPlanning | number | Кількість секунд на стадію планування |
+| rules.timeForPostPlanning | number | Кількість секунд на стадію очікування після планування |
+| rules.timeForAnswer | number | Кількість секунд на стадію відповіді |
+| rules.timeForPostAnswer | number | Кількість секунд на стадію очікування після відповіді |
+| rules.numberOfPlayers | number | Кількість гравців |
+| rules.maxRounds | number | Максимальна кількість раундів (0 - необмежено) |
+| status | string | Статус гри: "lobby" - підключення гравців, "running" - гра триває, "finished" - гра закінчена |
+| currentRound | number | Номер поточного раунду |
+| currentPhase | object | Об'єкт з інформацією про актуальну фазу гри |
+| currentPhase.id | number | Порядковий номер ходу |
+| currentPhase.round | number | Номер раунду |
+| currentPhase.round | number | Номер раунду |
+| currentPhase.status | string | Статус фази ("planning", "post-planning", "answer", "post-answer", "skipped") |
+| currentPhase.startAt | number | Часова мітка початку фази (для розрахунку таймерів) |
+| currentPhase.activePlayerId | string | Ідентифікатор гравця, який здійснює хід |
+| currentPhase.activePlayerAnswer | object | Об'єкт відповіді активного гравця (null якщо відповіді немає) |
+| currentPhase.activePlayerAnswer.variant | number | ID відповіді при type="variant" |
+| currentPhase.activePlayerAnswer.number | number | Числова відповідь при type="number" |
+| currentPhase.regionId | string | Ідентифікатор регіону, за який іде боротьба (пустий у фазі planning) |
+| currentPhase.question | object | Питання на яке треба відповісти (null у фазі planning) |
+| currentPhase.question.id | string | Унікальний ідентифікатор запитання |
+| currentPhase.question.type | string | Тип запитання: "variant" (з варіантами відповідей) або "number" (числова відповідь) |
+| currentPhase.question.subjectId | string | Ідентифікатор області України, якої стосується запитання, або "*" для загальних питань по соціології України |
+| currentPhase.question.text | string | Текст запитання |
+| currentPhase.question.imageUrl | string | (Опціонально) URL зображення, що стосується запитання |
+| currentPhase.question.variants | array | Масив об'єктів варіантів відповідей (заповнюється, якщо type = "variant") |
+| currentPhase.question.variants[].id | number | Ідентифікатор варіанту відповіді |
+| currentPhase.question.variants[].text | string | Текст варіанту відповіді |
+| currentPhase.question.variants[].imageUrl | string | (Опціонально) URL зображення для варіанту відповіді |
+| currentPhase.question.variants[].isCorrect | boolean | Прапорець, що вказує, чи є цей варіант правильною відповіддю |
+| currentPhase.question.numberAnswer | object | Об'єкт відповіді для числових запитань (заповнюється, якщо type = "number") |
+| currentPhase.question.numberAnswer.value | number | Числове значення правильної відповіді |
+| currentPhase.question.numberAnswer.units | string | Одиниці вимірювання (наприклад, "%", "тис. чоловік") |
+| currentPhase.contestedPlayerId | string | Ідентифікатор гравця, який відповідає на питання у випадку атаки на його регіон (null при атаці на нейтральний регіон) |
+| currentPhase.contestedPlayerAnswer | object | Об'єкт відповіді гравця, на регіон якого здійснюється атака (null якщо відповіді немає) |
+| currentPhase.contestedPlayerAnswer.variant | number | ID відповіді при type="variant" |
+| currentPhase.contestedPlayerAnswer.number | number | Числова відповідь при type="number" |
+| phases | array | Масив, що зберігає історію ходів. Структура об'єктів ідентична структурі currentPhase |
+| updatedAt | datetime | Дата і час останнього оновлення гри |
+| createdAt | datetime | Дата і час створення гри |
+
+# Розділ 4. Опис cloud функцій для гри "Соціологічна Україна"
+
+> **Оновлення схеми бази даних:**
+> У колекції `games` додано нове поле:
+> 
+> | Поле | Тип | Опис |
+> |------|-----|------|
+> | joinCode | string | 4-значний код для приєднання до гри |
+
+У цьому розділі описано всі Cloud Functions, які використовуються для бекенд-логіки гри "Соціологічна Україна". Всі функції реалізовані за допомогою Cloud Functions for Firebase та забезпечують єдиний інтерфейс для внесення змін у базу даних Firestore.
+
+## 4.1. createGame
+
+**Призначення**: Створює нову гру з вказаними параметрами та додає поточного користувача як першого гравця.
+
+**Тип функції**: HTTPS Callable
+
+**Вхідні параметри**:
+```typescript
+interface CreateGameParams {
+  gameName: string;           // Назва гри
+  timeForPlanning: number;    // Час на планування ходу в секундах
+  timeForAnswer: number;      // Час на відповідь у секундах
+  numberOfPlayers: number;    // Кількість гравців (від 1 до 6)
+  maxRounds: number;          // Максимальна кількість раундів (0 - необмежено)
+}
+```
+
+**Дії функції**:
+1. Перевірка аутентифікації та валідація вхідних параметрів
+2. Генерація унікального ідентифікатора гри та коду приєднання
+3. Отримання та підготовка карти України з колекції `maps`
+4. Створення структури гри в Firestore з наступними значеннями:
+   - Базові параметри (id, назва, дата створення)
+   - Правила гри з переданих параметрів та внутрішніх констант
+   - Порожня карта зі статусами всіх регіонів (всі нейтральні)
+   - Додавання поточного користувача як першого гравця з унікальним кольором
+   - Встановлення початкових значень для фаз та ходів гри
+   - Встановлення статусу гри `lobby`
+5. Повернення gameId клієнту
+
+**Приклад коду**:
+```javascript
+exports.createGame = functions.https.onCall(async (data, context) => {
+  // Перевірка аутентифікації
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+      'unauthenticated', 
+      'Для створення гри потрібна аутентифікація'
+    );
+  }
+
+  // Валідація вхідних параметрів
+  const { gameName, timeForPlanning, timeForAnswer, numberOfPlayers, maxRounds } = data;
+  
+  if (!gameName || !timeForPlanning || !timeForAnswer || !numberOfPlayers) {
+    throw new functions.https.HttpsError(
+      'invalid-argument', 
+      'Недостатньо параметрів для створення гри'
+    );
+  }
+
+  if (numberOfPlayers < 1 || numberOfPlayers > 6) {
+    throw new functions.https.HttpsError(
+      'invalid-argument', 
+      'Кількість гравців має бути від 1 до 6'
+    );
+  }
+
+  try {
+    // Генерація унікального коду приєднання (4 цифри)
+    const joinCode = Math.floor(1000 + Math.random() * 9000).toString();
+    
+    // Отримання даних користувача
+    const userId = context.auth.uid;
+    const userDoc = await admin.firestore().collection('users').doc(userId).get();
+    const userData = userDoc.data() || {};
+    
+    // Отримання даних карти України
+    const mapDoc = await admin.firestore().collection('maps').doc('ukraine').get();
+    const mapData = mapDoc.data();
+    
+    if (!mapData) {
+      throw new Error('Не знайдено карту України в базі даних');
+    }
+    
+    // Визначення порожньої карти (всі регіони нейтральні)
+    const geoJsonObj = JSON.parse(mapData.geoJson);
+    const regions = geoJsonObj.features.map(feature => feature.properties.ADMIN_1);
+    
+    const mapStatus = {};
+    regions.forEach(regionId => {
+      mapStatus[regionId] = '';  // Порожній рядок означає нейтральний регіон
+    });
+    
+    // Створення документа гри
+    const gameData = {
+      id: '',  // Буде замінено на ID документа після створення
+      name: gameName,
+      map: {
+        id: 'ukraine',
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        status: mapStatus
+      },
+      players: [{
+        id: userId,
+        displayName: userData.displayName || 'Гравець',
+        avatarUrl: userData.photoURL || '',
+        color: PLAYER_COLORS[0], // Константа з кольорами гравців
+        isCreator: true
+      }],
+      moves: [],
+      rules: {
+        timeForPlanning: parseInt(timeForPlanning),
+        timeForPostPlanning: 3, // 3 секунди на перехід між фазами
+        timeForAnswer: parseInt(timeForAnswer),
+        timeForPostAnswer: 5, // 5 секунд на показ результату
+        numberOfPlayers: parseInt(numberOfPlayers),
+        maxRounds: parseInt(maxRounds) || 0
+      },
+      status: 'lobby',
+      currentRound: 0,
+      currentPhase: null,
+      phases: [],
+      joinCode: joinCode,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    // Збереження гри в Firestore
+    const gameRef = await admin.firestore().collection('games').add(gameData);
+    const gameId = gameRef.id;
+    
+    // Оновлення ID гри в документі
+    await gameRef.update({
+      id: gameId
+    });
+    
+    // Повернення ID гри клієнту
+    return { gameId };
+  } catch (error) {
+    console.error('Помилка створення гри:', error);
+    throw new functions.https.HttpsError(
+      'internal', 
+      'Помилка при створенні гри'
+    );
+  }
+});
+```
+
+**Повернення**:
+```typescript
+interface CreateGameResult {
+  gameId: string;  // ID створеної гри
+}
+```
+
+**Помилки**:
+- `unauthenticated`: Користувач не авторизований
+- `invalid-argument`: Неправильні або неповні вхідні параметри
+- `internal`: Внутрішня помилка сервера
+
+## 4.7. setAnswer
+
+**Призначення**: Дозволяє гравцю надати відповідь на питання під час фази відповіді.
+
+**Тип функції**: HTTPS Callable
+
+**Вхідні параметри**:
+```typescript
+interface SetAnswerParams {
+  gameId: string;                    // ID гри
+  variant?: number;                  // ID вибраного варіанту відповіді (для питань з варіантами)
+  number?: number;                   // Числова відповідь (для числових питань)
+}
+```
+
+**Дії функції**:
+1. Перевірка аутентифікації та валідація вхідних параметрів
+2. Отримання поточного стану гри з Firestore
+3. Перевірка, що статус гри - 'running', а статус фази - 'answer'
+4. Перевірка, що користувач є активним гравцем або оспорюючим гравцем
+5. Валідація типу відповіді відповідно до типу питання в currentPhase
+6. Збереження відповіді в activePlayerAnswer або contestedPlayerAnswer
+7. Перевірка, чи всі необхідні гравці вже відповіли:
+   - Якщо так, скасування таймауту і виклик логіки обробки відповідей
+   - Якщо ні, просто збереження відповіді
+8. Збереження оновленого об'єкта гри в Firestore
+
+**Приклад коду**:
+```javascript
+exports.setAnswer = functions.https.onCall(async (data, context) => {
+  // Перевірка аутентифікації
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+      'unauthenticated', 
+      'Для відповіді на питання потрібна аутентифікація'
+    );
+  }
+
+  // Валідація вхідних параметрів
+  const { gameId, variant, number } = data;
+  
+  if (!gameId || (variant === undefined && number === undefined)) {
+    throw new functions.https.HttpsError(
+      'invalid-argument', 
+      'Не вказано ID гри або відповідь'
+    );
+  }
+
+  try {
+    // Отримання даних користувача
+    const userId = context.auth.uid;
+    
+    // Отримання даних гри
+    const gameDoc = await admin.firestore().collection('games').doc(gameId).get();
+    
+    if (!gameDoc.exists) {
+      throw new functions.https.HttpsError(
+        'not-found', 
+        'Гру не знайдено'
+      );
+    }
+    
+    const gameData = gameDoc.data();
+    
+    // Перевірка статусу гри
+    if (gameData.status !== 'running') {
+      throw new functions.https.HttpsError(
+        'failed-precondition', 
+        'Гра не активна'
+      );
+    }
+    
+    // Перевірка статусу фази
+    if (!gameData.currentPhase || gameData.currentPhase.status !== 'answer') {
+      throw new functions.https.HttpsError(
+        'failed-precondition', 
+        'Зараз не стадія відповіді'
+      );
+    }
+    
+    // Перевірка, чи є користувач активним або оспорюючим гравцем
+    const isActivePlayer = gameData.currentPhase.activePlayerId === userId;
+    const isContestedPlayer = gameData.currentPhase.contestedPlayerId === userId;
+    
+    if (!isActivePlayer && !isContestedPlayer) {
+      throw new functions.https.HttpsError(
+        'permission-denied', 
+        'Ви не можете відповісти на це питання'
+      );
+    }
+    
+    // Перевірка, чи не відповів гравець уже
+    if (isActivePlayer && gameData.currentPhase.activePlayerAnswer !== null) {
+      throw new functions.https.HttpsError(
+        'failed-precondition', 
+        'Ви вже відповіли на це питання'
+      );
+    }
+    
+    if (isContestedPlayer && gameData.currentPhase.contestedPlayerAnswer !== null) {
+      throw new functions.https.HttpsError(
+        'failed-precondition', 
+        'Ви вже відповіли на це питання'
+      );
+    }
+    
+    // Валідація типу відповіді відповідно до типу питання
+    const questionType = gameData.currentPhase.question.type;
+    
+    if (questionType === 'variant' && variant === undefined) {
+      throw new functions.https.HttpsError(
+        'invalid-argument', 
+        'Для питання з варіантами потрібно вказати ID варіанту'
+      );
+    }
+    
+    if (questionType === 'number' && number === undefined) {
+      throw new functions.https.HttpsError(
+        'invalid-argument', 
+        'Для числового питання потрібно вказати числову відповідь'
+      );
+    }
+    
+    // Створення об'єкта відповіді
+    const answer = questionType === 'variant' 
+      ? { variant: variant } 
+      : { number: number };
+    
+    // Оновлення поточної фази
+    const updatedPhase = { ...gameData.currentPhase };
+    
+    if (isActivePlayer) {
+      updatedPhase.activePlayerAnswer = answer;
+    } else {
+      updatedPhase.contestedPlayerAnswer = answer;
+    }
+    
+    // Перевірка, чи всі необхідні гравці відповіли
+    const allPlayersAnswered = (
+      updatedPhase.activePlayerAnswer !== null && 
+      (updatedPhase.contestedPlayerId === null || updatedPhase.contestedPlayerAnswer !== null)
+    );
+    
+    // Оновлення документа гри
+    await admin.firestore().collection('games').doc(gameId).update({
+      currentPhase: updatedPhase,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
+// Якщо всі гравці відповіли, відміняємо таймаут і запускаємо обробку відповідей
+    if (allPlayersAnswered) {
+      // Скасування таймауту
+      if (gameData.currentPhase.timeoutTaskId) {
+        try {
+          await cancelTimeoutTask(gameData.currentPhase.timeoutTaskId);
+        } catch (error) {
+          console.warn('Failed to cancel timeout task:', error);
+          // Продовжуємо виконання навіть у разі помилки скасування
+        }
+      }
+      
+      // Викликаємо логіку обробки відповідей самостійно, симулюючи handleAnswerTimeout
+      const updateData = {
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+      
+      // Перевіряємо переможця
+      const winners = checkWinners(updatedPhase);
+      
+      // Обробляємо результат залежно від кількості переможців
+      if (winners.length === 1) {
+        // Один переможець - регіон зафарбовується у колір переможця
+        const winnerId = winners[0];
+        const mapStatus = { ...gameData.map.status };
+        mapStatus[gameData.currentPhase.regionId] = winnerId;
+        updateData['map.status'] = mapStatus;
+      }
+      
+      // Оновлюємо поточну фазу
+      updateData.currentPhase = {
+        ...updatedPhase,
+        status: 'post-answer',
+        startAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+      
+      // Плануємо таймаут для фази post-answer
+      const timeoutTaskId = await schedulePhaseTimeout(gameId, gameData.rules.timeForPostAnswer);
+      updateData.currentPhase.timeoutTaskId = timeoutTaskId;
+      
+      // Зберігаємо оновлені дані
+      await admin.firestore().collection('games').doc(gameId).update(updateData);
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Помилка відповіді на питання:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    throw new functions.https.HttpsError(
+      'internal', 
+      'Помилка при відповіді на питання'
+    );
+  }
+});
+```
+
+**Повернення**:
+```typescript
+interface SetAnswerResult {
+  success: boolean;
+}
+```
+
+**Помилки**:
+- `unauthenticated`: Користувач не авторизований
+- `invalid-argument`: Неправильні або неповні вхідні параметри
+- `not-found`: Гру не знайдено за вказаним ID
+- `failed-precondition`: Гра не активна, не стадія відповіді або користувач уже відповів
+- `permission-denied`: Користувач не може відповісти на це питання
+- `internal`: Внутрішня помилка сервера
+
+## 4.6. setPlanningResult
+
+**Призначення**: Дозволяє гравцю вибрати регіон після фази планування для подальшої відповіді на питання.
+
+**Тип функції**: HTTPS Callable
+
+**Вхідні параметри**:
+```typescript
+interface SetPlanningResultParams {
+  gameId: string;   // ID гри
+  regionId: string; // ID регіону, який вибрав гравець
+}
+```
+
+**Дії функції**:
+1. Перевірка аутентифікації та валідація вхідних параметрів
+2. Отримання поточного стану гри з Firestore
+3. Перевірка, що статус гри - 'running', а статус фази - 'planning'
+4. Перевірка, що користувач є активним гравцем поточної фази
+5. Валідація вибраного регіону (існує і не належить поточному гравцю)
+6. Оновлення currentPhase: 
+   - Встановлення вибраного regionId
+   - Якщо регіон під контролем іншого гравця, встановлення contestedPlayerId
+   - Зміна статусу фази на 'post-planning'
+7. Планування відкладеного виклику функції gameCurrentPhaseTimeout
+8. Збереження оновленого об'єкта гри в Firestore
+
+**Приклад коду**:
+```javascript
+exports.setPlanningResult = functions.https.onCall(async (data, context) => {
+  // Перевірка аутентифікації
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+      'unauthenticated', 
+      'Для вибору регіону потрібна аутентифікація'
+    );
+  }
+
+  // Валідація вхідних параметрів
+  const { gameId, regionId } = data;
+  
+  if (!gameId || !regionId) {
+    throw new functions.https.HttpsError(
+      'invalid-argument', 
+      'Не вказано ID гри або регіону'
+    );
+  }
+
+  try {
+    // Отримання даних користувача
+    const userId = context.auth.uid;
+    
+    // Отримання даних гри
+    const gameDoc = await admin.firestore().collection('games').doc(gameId).get();
+    
+    if (!gameDoc.exists) {
+      throw new functions.https.HttpsError(
+        'not-found', 
+        'Гру не знайдено'
+      );
+    }
+    
+    const gameData = gameDoc.data();
+    
+    // Перевірка статусу гри
+    if (gameData.status !== 'running') {
+      throw new functions.https.HttpsError(
+        'failed-precondition', 
+        'Гра не активна'
+      );
+    }
+    
+    // Перевірка статусу фази
+    if (!gameData.currentPhase || gameData.currentPhase.status !== 'planning') {
+      throw new functions.https.HttpsError(
+        'failed-precondition', 
+        'Зараз не стадія планування'
+      );
+    }
+    
+    // Перевірка, чи є користувач активним гравцем
+    if (gameData.currentPhase.activePlayerId !== userId) {
+      throw new functions.https.HttpsError(
+        'permission-denied', 
+        'Зараз не ваш хід'
+      );
+    }
+    
+    // Перевірка, чи існує вибраний регіон
+    if (!gameData.map.status.hasOwnProperty(regionId)) {
+      throw new functions.https.HttpsError(
+        'invalid-argument', 
+        'Регіон не існує'
+      );
+    }
+    
+    // Перевірка, чи не належить регіон поточному гравцю
+    if (gameData.map.status[regionId] === userId) {
+      throw new functions.https.HttpsError(
+        'failed-precondition', 
+        'Ви вже контролюєте цей регіон'
+      );
+    }
+    
+    // Визначення, чи є регіон під контролем іншого гравця
+    const contestedPlayerId = gameData.map.status[regionId] || null;
+    
+    // Оновлення поточної фази
+    const updatedPhase = {
+      ...gameData.currentPhase,
+      regionId: regionId,
+      contestedPlayerId: contestedPlayerId,
+      status: 'post-planning',
+      startAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    // Якщо є попередня таска таймауту, скасовуємо її
+    if (gameData.currentPhase.timeoutTaskId) {
+      try {
+        await cancelTimeoutTask(gameData.currentPhase.timeoutTaskId);
+      } catch (error) {
+        console.warn('Failed to cancel timeout task:', error);
+        // Продовжуємо виконання навіть у разі помилки скасування
+      }
+    }
+    
+    // Планування нового таймауту
+    const timeoutTaskId = await schedulePhaseTimeout(gameId, gameData.rules.timeForPostPlanning);
+    updatedPhase.timeoutTaskId = timeoutTaskId;
+    
+    // Оновлення документа гри
+    await admin.firestore().collection('games').doc(gameId).update({
+      currentPhase: updatedPhase,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Помилка вибору регіону:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    throw new functions.https.HttpsError(
+      'internal', 
+      'Помилка при виборі регіону'
+    );
+  }
+});
+
+/**
+ * Допоміжна функція для скасування завдання таймауту
+ * @param {string} taskId - ID завдання для скасування
+ */
+async function cancelTimeoutTask(taskId) {
+  const project = process.env.GCLOUD_PROJECT;
+  const location = 'us-central1';
+  const queue = 'game-timeouts';
+  
+  const tasksClient = new CloudTasksClient();
+  const taskPath = tasksClient.taskPath(project, location, queue, taskId);
+  
+  await tasksClient.deleteTask({
+    name: taskPath
+  });
+}
+```
+
+**Повернення**:
+```typescript
+interface SetPlanningResultResult {
+  success: boolean;
+}
+```
+
+**Помилки**:
+- `unauthenticated`: Користувач не авторизований
+- `invalid-argument`: Неправильні або неповні вхідні параметри
+- `not-found`: Гру не знайдено за вказаним ID
+- `failed-precondition`: Гра не активна, не стадія планування або регіон вже належить гравцю
+- `permission-denied`: Зараз не хід поточного користувача
+- `internal`: Внутрішня помилка сервера
+
+## 4.5. gameCurrentPhaseTimeout
+
+**Призначення**: Обробляє таймаути різних фаз гри, автоматично просуваючи ігровий процес, якщо гравець не виконує дію протягом відведеного часу.
+
+**Тип функції**: HTTP Callable (викликається через Cloud Tasks)
+
+**Вхідні параметри**:
+```typescript
+interface GameTimeoutParams {
+  gameId: string;  // ID гри, для якої спрацював таймаут
+}
+```
+
+**Дії функції**:
+Поведінка функції залежить від поточного статусу фази гри (game.currentPhase.status):
+
+1. Для статусу **'planning'**:
+   - Збільшення лічильника пропущених ходів (game.planningSkippedCount)
+   - Якщо лічильник >= кількості гравців, гра завершується зі статусом 'skipped'
+   - Інакше:
+     - Зміна статусу поточної фази на 'skipped'
+     - Додавання поточної фази до архівного масиву phases
+     - Модифікація черги ходів (видалення найстарішого, додавання нового)
+     - Запуск нової фази для наступного гравця
+     - Планування нового таймауту для фази planning
+
+2. Для статусу **'post-planning'**:
+   - Визначення типу питання (залежно від наявності contestedPlayerId)
+   - Отримання випадкового питання з БД за типом та регіоном
+   - Присвоєння питання до currentPhase.question
+   - Зміна статусу на 'answer'
+   - Планування таймауту для фази answer
+
+3. Для статусу **'answer'**:
+   - Перевірка переможця за допомогою функції checkWinners
+   - Обробка результату залежно від кількості переможців:
+     - Якщо переможців немає, статус регіону не змінюється
+     - Якщо є один переможець, регіон зафарбовується у колір переможця
+     - Якщо переможців два (рідкісний випадок при однаковій правильній відповіді), зберігається статус-кво
+   - Зміна статусу на 'post-answer'
+   - Планування таймауту для фази post-answer
+
+4. Для статусу **'post-answer'**:
+   - Додавання поточної фази до архівного масиву phases
+   - Модифікація черги ходів (видалення найстарішого, додавання нового)
+   - Запуск нової фази для наступного гравця
+   - Планування таймауту для наступної фази planning
+
+**Приклад коду**:
+```javascript
+exports.gameCurrentPhaseTimeout = functions.https.onRequest(async (req, res) => {
+  try {
+    // Парсимо тіло запиту
+    const { gameId } = req.body;
+    
+    if (!gameId) {
+      res.status(400).send({ error: 'Missing gameId parameter' });
+      return;
+    }
+    
+    // Отримання даних гри
+    const gameDoc = await admin.firestore().collection('games').doc(gameId).get();
+    
+    if (!gameDoc.exists) {
+      res.status(404).send({ error: 'Game not found' });
+      return;
+    }
+    
+    const gameData = gameDoc.data();
+    
+    // Перевірка, чи не завершена гра
+    if (gameData.status !== 'running') {
+      res.status(200).send({ message: 'Game is not running' });
+      return;
+    }
+    
+    // Обробка різних статусів фази
+    let updateData = {
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    switch (gameData.currentPhase.status) {
+      case 'planning':
+        await handlePlanningTimeout(gameId, gameData, updateData);
+        break;
+        
+      case 'post-planning':
+        await handlePostPlanningTimeout(gameId, gameData, updateData);
+        break;
+        
+      case 'answer':
+        await handleAnswerTimeout(gameId, gameData, updateData);
+        break;
+        
+      case 'post-answer':
+        await handlePostAnswerTimeout(gameId, gameData, updateData);
+        break;
+        
+      default:
+        res.status(400).send({ error: 'Unknown phase status' });
+        return;
+    }
+    
+    // Збереження оновлених даних, якщо вони не збережені в обробнику фази
+    if (Object.keys(updateData).length > 1) { // Перевіряємо, чи є щось, крім updatedAt
+      await admin.firestore().collection('games').doc(gameId).update(updateData);
+    }
+    
+    res.status(200).send({ success: true });
+  } catch (error) {
+    console.error('Error processing game timeout:', error);
+    res.status(500).send({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * Обробка таймауту фази "planning"
+ */
+/**
+ * Обробка таймауту фази "planning"
+ */
+async function handlePlanningTimeout(gameId, gameData, updateData) {
+  // Збільшення лічильника пропущених ходів
+  const skippedCount = (gameData.planningSkippedCount || 0) + 1;
+  updateData.planningSkippedCount = skippedCount;
+  
+  // Перевірка, чи не пропустили всі гравці свій хід
+  if (skippedCount >= gameData.players.length) {
+    // Всі гравці пропустили хід, завершуємо гру
+    updateData.status = 'skipped';
+    await admin.firestore().collection('games').doc(gameId).update(updateData);
+    return;
+  }
+  
+  // Переведення поточної фази в статус "skipped"
+  const currentPhase = { ...gameData.currentPhase, status: 'skipped' };
+  
+  // Додавання поточної фази до архіву
+  const phases = [...(gameData.phases || []), currentPhase];
+  updateData.phases = phases;
+  
+  // Модифікація черги ходів
+  const moves = [...gameData.moves];
+  
+  // Видаляємо найстаріший хід, якщо в черзі більше 5 ходів
+  if (moves.length >= 5) {
+    moves.shift();
+  }
+  
+  // Додаємо новий хід в кінець черги
+  const lastMove = moves[moves.length - 1];
+  const playerIndex = gameData.players.findIndex(player => player.id === lastMove.playerId);
+  const nextPlayerIndex = (playerIndex + 1) % gameData.players.length;
+  const nextPlayerId = gameData.players[nextPlayerIndex].id;
+  
+  // Визначаємо номер раунду для нового ходу
+  let nextRound = lastMove.round;
+  if (nextPlayerIndex === 0) {
+    nextRound++; // Новий раунд, якщо ходить перший гравець
+  }
+  
+  moves.push({
+    playerId: nextPlayerId,
+    round: nextRound
+  });
+  
+  updateData.moves = moves;
+  
+  // Перевіряємо умови закінчення гри
+  if (await checkAndHandleGameEnd(gameId, gameData, updateData, nextRound)) {
+    return; // Гра завершена
+  }
+  
+  // Створюємо нову фазу
+  const newPhaseObj = newPhase(moves[0], currentPhase);
+  updateData.currentPhase = newPhaseObj;
+  updateData.currentRound = newPhaseObj.round;
+  
+  // Плануємо таймаут для нової фази
+  const timeoutTaskId = await schedulePhaseTimeout(gameId, gameData.rules.timeForPlanning);
+  updateData.currentPhase.timeoutTaskId = timeoutTaskId;
+  
+  // Зберігаємо оновлення в БД
+  await admin.firestore().collection('games').doc(gameId).update(updateData);
+}
+
+/**
+ * Обробка таймауту фази "post-planning"
+ */
+async function handlePostPlanningTimeout(gameId, gameData, updateData) {
+  // Визначаємо тип питання
+  const questionType = gameData.currentPhase.contestedPlayerId ? 'number' : 'variant';
+  
+  // Отримуємо випадкове питання з БД
+  let question;
+  
+  if (questionType === 'variant') {
+    // Для варіантів шукаємо питання з конкретного регіону
+    // Спочатку отримуємо кількість документів для визначення випадкового зсуву
+    const countQuery = await admin.firestore().collection('questions')
+      .where('type', '==', 'variant')
+      .where('subjectId', '==', gameData.currentPhase.regionId)
+      .count()
+      .get();
+    
+    const count = countQuery.data().count;
+    
+    if (count === 0) {
+      throw new Error(`No questions found for region ${gameData.currentPhase.regionId}`);
+    }
+    
+    // Генеруємо випадковий індекс
+    const randomIndex = Math.floor(Math.random() * count);
+    
+    // Отримуємо питання за випадковим індексом
+    const questionsSnapshot = await admin.firestore().collection('questions')
+      .where('type', '==', 'variant')
+      .where('subjectId', '==', gameData.currentPhase.regionId)
+      .offset(randomIndex)
+      .limit(1)
+      .get();
+    
+    if (questionsSnapshot.empty) {
+      throw new Error(`Failed to get random question for region ${gameData.currentPhase.regionId}`);
+    }
+    
+    question = questionsSnapshot.docs[0].data();
+    
+  } else {
+    // Для числових питань - будь-яке числове питання
+    // Спочатку отримуємо кількість документів для визначення випадкового зсуву
+    const countQuery = await admin.firestore().collection('questions')
+      .where('type', '==', 'number')
+      .count()
+      .get();
+    
+    const count = countQuery.data().count;
+    
+    if (count === 0) {
+      throw new Error('No number questions found');
+    }
+    
+    // Генеруємо випадковий індекс
+    const randomIndex = Math.floor(Math.random() * count);
+    
+    // Отримуємо питання за випадковим індексом
+    const questionsSnapshot = await admin.firestore().collection('questions')
+      .where('type', '==', 'number')
+      .offset(randomIndex)
+      .limit(1)
+      .get();
+    
+    if (questionsSnapshot.empty) {
+      throw new Error('Failed to get random number question');
+    }
+    
+    question = questionsSnapshot.docs[0].data();
+  }
+  
+  // Оновлюємо поточну фазу
+  updateData.currentPhase = {
+    ...gameData.currentPhase,
+    status: 'answer',
+    question: question,
+    startAt: admin.firestore.FieldValue.serverTimestamp()
+  };
+  
+  // Плануємо таймаут для фази answer
+  const timeoutTaskId = await schedulePhaseTimeout(gameId, gameData.rules.timeForAnswer);
+  updateData.currentPhase.timeoutTaskId = timeoutTaskId;
+  
+  // Зберігаємо оновлення в БД
+  await admin.firestore().collection('games').doc(gameId).update(updateData);
+}'variant') {
+    // Для варіантів шукаємо питання з конкретного регіону
+    questionQuery = admin.firestore().collection('questions')
+      .where('type', '==', 'variant')
+      .where('subjectId', '==', gameData.currentPhase.regionId)
+      .limit(10); // Обмежуємо, щоб вибрати випадкове з результатів
+  } else {
+    // Для числових питань - будь-яке числове питання
+    questionQuery = admin.firestore().collection('questions')
+      .where('type', '==', 'number')
+      .limit(20); // Обмежуємо, щоб вибрати випадкове з результатів
+  }
+  
+  const questionSnapshot = await questionQuery.get();
+  
+  if (questionSnapshot.empty) {
+    throw new Error(`No questions found for type ${questionType} and region ${gameData.currentPhase.regionId}`);
+  }
+  
+  // Вибираємо випадкове питання з результатів
+  const randomIndex = Math.floor(Math.random() * questionSnapshot.size);
+  const questionDoc = questionSnapshot.docs[randomIndex];
+  const question = questionDoc.data();
+  
+  // Оновлюємо поточну фазу
+  updateData.currentPhase = {
+    ...gameData.currentPhase,
+    status: 'answer',
+    question: question,
+    startAt: admin.firestore.FieldValue.serverTimestamp()
+  };
+  
+  // Плануємо таймаут для фази answer
+  const timeoutTaskId = await schedulePhaseTimeout(gameData.id, gameData.rules.timeForAnswer);
+  updateData.currentPhase.timeoutTaskId = timeoutTaskId;
+}
+
+/**
+ * Обробка таймауту фази "answer"
+ */
+async function handleAnswerTimeout(gameId, gameData, updateData) {
+  // Перевіряємо переможця
+  const winners = checkWinners(gameData.currentPhase);
+  
+  // Обробляємо результат залежно від кількості переможців
+  if (winners.length === 1) {
+    // Один переможець - регіон зафарбовується у колір переможця
+    const winnerId = winners[0];
+    const mapStatus = { ...gameData.map.status };
+    mapStatus[gameData.currentPhase.regionId] = winnerId;
+    updateData['map.status'] = mapStatus;
+  }
+  
+  // Оновлюємо поточну фазу
+  updateData.currentPhase = {
+    ...gameData.currentPhase,
+    status: 'post-answer',
+    startAt: admin.firestore.FieldValue.serverTimestamp()
+  };
+  
+  // Плануємо таймаут для фази post-answer
+  const timeoutTaskId = await schedulePhaseTimeout(gameId, gameData.rules.timeForPostAnswer);
+  updateData.currentPhase.timeoutTaskId = timeoutTaskId;
+  
+  // Зберігаємо оновлені дані
+  await admin.firestore().collection('games').doc(gameId).update(updateData);
+}
+
+/**
+ * Обробка таймауту фази "post-answer"
+ */
+async function handlePostAnswerTimeout(gameData, updateData) {
+  // Додаємо поточну фазу до архіву
+  const phases = [...(gameData.phases || []), gameData.currentPhase];
+  updateData.phases = phases;
+  
+  // Модифікація черги ходів
+  const moves = [...gameData.moves];
+  
+  // Видаляємо найстаріший хід, якщо в черзі більше 5 ходів
+  if (moves.length >= 5) {
+    moves.shift();
+  }
+  
+  // Додаємо новий хід в кінець черги
+  const lastMove = moves[moves.length - 1];
+  const playerIndex = gameData.players.findIndex(player => player.id === lastMove.playerId);
+  const nextPlayerIndex = (playerIndex + 1) % gameData.players.length;
+  const nextPlayerId = gameData.players[nextPlayerIndex].id;
+  
+  // Визначаємо номер раунду для нового ходу
+  let nextRound = lastMove.round;
+  if (nextPlayerIndex === 0) {
+    nextRound++; // Новий раунд, якщо ходить перший гравець
+  }
+  
+  moves.push({
+    playerId: nextPlayerId,
+    round: nextRound
+  });
+  
+  updateData.moves = moves;
+  
+  // Перевірка умов завершення гри
+  const winner = checkWinner(gameData);
+  
+  if (winner || (gameData.rules.maxRounds > 0 && nextRound > gameData.rules.maxRounds)) {
+    // Завершуємо гру, якщо є переможець або досягнуто максимальної кількості раундів
+    updateData.status = 'finished';
+    updateData.currentPhase = null;
+    
+    // Якщо є переможець, позначаємо його
+    if (winner) {
+      const updatedPlayers = gameData.players.map(player => {
+        if (player.id === winner) {
+          return { ...player, isWinner: true };
+        }
+        return player;
+      });
+      updateData.players = updatedPlayers;
+    }
+    return;
+  }
+  
+  // Створюємо нову фазу
+  const newPhaseObj = newPhase(moves[0], gameData.currentPhase);
+  updateData.currentPhase = newPhaseObj;
+  updateData.currentRound = newPhaseObj.round;
+  
+  // Плануємо таймаут для нової фази
+  const timeoutTaskId = await schedulePhaseTimeout(gameData.id, gameData.rules.timeForPlanning);
+  updateData.currentPhase.timeoutTaskId = timeoutTaskId;
+}
+
+/**
+ * Перевіряє переможців на основі відповідей на питання
+ * @param {Object} phase - Поточна фаза гри
+ * @returns {Array} - Масив ID гравців-переможців
+ */
+/**
+ * Перевіряє переможців на основі відповідей на питання
+ * @param {Object} phase - Поточна фаза гри
+ * @returns {Array} - Масив ID гравців-переможців
+ */
+function checkWinners(phase) {
+  const winners = [];
+  
+  if (phase.question.type === 'variant') {
+    // Для питань з варіантами - перевіряємо, чи правильний варіант обрав гравець
+    const correctVariantId = phase.question.variants.find(v => v.isCorrect).id;
+    
+    if (phase.activePlayerAnswer && phase.activePlayerAnswer.variant === correctVariantId) {
+      winners.push(phase.activePlayerId);
+    }
+  } else if (phase.question.type === 'number') {
+    // Для числових питань - порівнюємо відповіді гравців
+    const correctAnswer = phase.question.numberAnswer.value;
+    
+    // Відповіді гравців (або null, якщо не відповіли)
+    const activePlayerAnswer = phase.activePlayerAnswer ? phase.activePlayerAnswer.number : null;
+    const contestedPlayerAnswer = phase.contestedPlayerAnswer ? phase.contestedPlayerAnswer.number : null;
+    
+    if (phase.contestedPlayerId) {
+      // Дуель - порівнюємо відповіді гравців, хто ближче до правильної
+      if (activePlayerAnswer !== null && contestedPlayerAnswer !== null) {
+        const activePlayerDiff = Math.abs(activePlayerAnswer - correctAnswer);
+        const contestedPlayerDiff = Math.abs(contestedPlayerAnswer - correctAnswer);
+        
+        if (activePlayerDiff < contestedPlayerDiff) {
+          winners.push(phase.activePlayerId);
+        } else if (contestedPlayerDiff < activePlayerDiff) {
+          winners.push(phase.contestedPlayerId);
+        } else {
+          // Однакова відстань до правильної відповіді - обидва перемагають
+          winners.push(phase.activePlayerId, phase.contestedPlayerId);
+        }
+      } else if (activePlayerAnswer !== null) {
+        // Тільки активний гравець відповів
+        winners.push(phase.activePlayerId);
+      } else if (contestedPlayerAnswer !== null) {
+        // Тільки оспорюваний гравець відповів
+        winners.push(phase.contestedPlayerId);
+      }
+    } else {
+      // Звичайна відповідь (не дуель) - перевіряємо, чи відповів активний гравець правильно
+      if (activePlayerAnswer !== null && Math.abs(activePlayerAnswer - correctAnswer) / correctAnswer <= 0.1) {
+        // Допускаємо похибку до 10% для числових відповідей
+        winners.push(phase.activePlayerId);
+      }
+    }
+  }
+  
+  return winners;
+}
+
+/**
+ * Перевіряє, чи є в грі переможець
+ * @param {Object} gameData - Дані гри
+ * @returns {string|null} - ID гравця-переможця або null, якщо переможця немає
+ */
+function checkWinner(gameData) {
+  // Для перемоги гравець повинен контролювати всі регіони на карті
+  const mapStatus = gameData.map.status;
+  const regions = Object.keys(mapStatus);
+  
+  // Для кожного гравця перевіряємо, чи контролює він всі регіони
+  for (const player of gameData.players) {
+    const playerId = player.id;
+    const controlledRegions = regions.filter(regionId => mapStatus[regionId] === playerId);
+    
+    if (controlledRegions.length === regions.length) {
+      return playerId; // Гравець контролює всю карту
+    }
+  }
+  
+  // Альтернативна умова перемоги - гравець з найбільшою кількістю регіонів у кінці гри
+  if (gameData.rules.maxRounds > 0 && gameData.currentRound >= gameData.rules.maxRounds) {
+    let maxRegions = 0;
+    let winnerId = null;
+    
+    for (const player of gameData.players) {
+      const playerId = player.id;
+      const controlledRegions = regions.filter(regionId => mapStatus[regionId] === playerId).length;
+      
+      if (controlledRegions > maxRegions) {
+        maxRegions = controlledRegions;
+        winnerId = playerId;
+      }
+    }
+    
+    return winnerId;
+  }
+  
+  return null; // Немає переможця
+}
+
+/**
+ * Перевіряє умови завершення гри та обробляє перемогу
+ * @param {string} gameId - ID гри
+ * @param {Object} gameData - Дані гри
+ * @param {Object} updateData - Об'єкт для оновлення даних гри
+ * @param {number} nextRound - Номер наступного раунду
+ * @returns {boolean} - true, якщо гра завершена, false - якщо гра продовжується
+ */
+async function checkAndHandleGameEnd(gameId, gameData, updateData, nextRound) {
+  // Перевірка умов завершення гри
+  const winner = checkWinner(gameData);
+  const maxRoundsReached = gameData.rules.maxRounds > 0 && nextRound > gameData.rules.maxRounds;
+  
+  if (winner || maxRoundsReached) {
+    // Завершуємо гру, якщо є переможець або досягнуто максимальної кількості раундів
+    updateData.status = 'finished';
+    
+    // Додаємо поточну фазу до архіву, якщо вона є
+    if (gameData.currentPhase) {
+      const phases = [...(gameData.phases || []), gameData.currentPhase];
+      updateData.phases = phases;
+    }
+    
+    updateData.currentPhase = null;
+    
+    // Якщо є переможець, позначаємо його
+    if (winner) {
+      const updatedPlayers = gameData.players.map(player => {
+        if (player.id === winner) {
+          return { ...player, isWinner: true };
+        }
+        return player;
+      });
+      updateData.players = updatedPlayers;
+    }
+    
+    // Зберігаємо оновлений об'єкт гри в БД
+    await admin.firestore().collection('games').doc(gameId).update(updateData);
+    
+    return true; // Гра завершена
+  }
+  
+  return false; // Гра продовжується
+}
+```
+
+**Помилки**:
+- 400: Неправильні або неповні вхідні параметри
+- 404: Гру не знайдено за вказаним ID
+- 500: Внутрішня помилка сервера
+
+## 4.4. startGame
+
+**Призначення**: Запускає гру, переводячи її з статусу лоббі в активний ігровий процес.
+
+**Тип функції**: HTTPS Callable (також може викликатися внутрішньо з інших функцій)
+
+**Вхідні параметри**:
+```typescript
+interface StartGameParams {
+  gameId: string;  // ID гри, яку потрібно запустити
+}
+```
+
+**Дії функції**:
+1. Перевірка вхідних параметрів та отримання даних гри
+2. Перевірка, що статус гри - 'lobby', інакше повернення помилки
+3. Створення масиву черги ходів (moves) з першим, другим і третім ходом
+4. Запуск першого ходу першого гравця за допомогою допоміжної функції newPhase
+5. Планування відкладеного виклику функції gameCurrentPhaseTimeout
+6. Зміна статусу гри на 'running'
+7. Збереження оновленого об'єкта гри
+
+**Приклад коду**:
+```javascript
+exports.startGame = functions.https.onCall(async (data, context) => {
+  // Валідація вхідних параметрів
+  const { gameId } = data;
+  
+  if (!gameId) {
+    throw new functions.https.HttpsError(
+      'invalid-argument', 
+      'Не вказано ID гри'
+    );
+  }
+
+  try {
+    // Отримання даних гри
+    const gameDoc = await admin.firestore().collection('games').doc(gameId).get();
+    
+    if (!gameDoc.exists) {
+      throw new functions.https.HttpsError(
+        'not-found', 
+        'Гру не знайдено'
+      );
+    }
+    
+    const gameData = gameDoc.data();
+    
+    // Перевірка статусу гри
+    if (gameData.status !== 'lobby') {
+      throw new functions.https.HttpsError(
+        'failed-precondition', 
+        'Гра вже запущена або завершена'
+      );
+    }
+    
+    // Створення масиву черги ходів
+    const players = gameData.players;
+    const movesArray = [];
+    
+    // Додаємо перші 3 ходи (або менше, якщо гравців менше 3)
+    for (let i = 0; i < Math.min(3, players.length); i++) {
+      movesArray.push({
+        playerId: players[i].id,
+        round: Math.floor(i / players.length) + 1
+      });
+    }
+    
+    // Викликаємо допоміжну функцію для створення нової фази
+    const currentPhase = newPhase(movesArray[0], gameData.currentPhase);
+    
+    // Створюємо відкладений виклик функції через Cloud Tasks
+    const timeoutTaskId = await schedulePhaseTimeout(gameId, gameData.rules.timeForPlanning);
+    
+    // Додаємо ID завдання таймауту до фази
+    currentPhase.timeoutTaskId = timeoutTaskId;
+    
+    // Оновлюємо дані гри
+    const updateData = {
+      moves: movesArray,
+      currentPhase: currentPhase,
+      status: 'running',
+      currentRound: 1,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    // Зберігаємо оновлені дані
+    await admin.firestore().collection('games').doc(gameId).update(updateData);
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Помилка запуску гри:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    throw new functions.https.HttpsError(
+      'internal', 
+      'Помилка при запуску гри'
+    );
+  }
+});
+
+/**
+ * Допоміжна функція для створення нової фази гри
+ * @param {Object} move - Об'єкт ходу з playerId та round
+ * @param {Object|null} previousPhase - Попередня фаза (якщо є)
+ * @returns {Object} - Нова фаза гри
+ */
+function newPhase(move, previousPhase) {
+  return {
+    id: previousPhase ? previousPhase.id + 1 : 0,
+    round: move.round,
+    status: 'planning',
+    startAt: admin.firestore.FieldValue.serverTimestamp(),
+    activePlayerId: move.playerId,
+    activePlayerAnswer: null,
+    regionId: '',
+    question: null,
+    contestedPlayerId: null,
+    contestedPlayerAnswer: null
+  };
+}
+
+/**
+ * Допоміжна функція для планування відкладеного виклику функції таймауту
+ * @param {string} gameId - ID гри
+ * @param {number} delaySeconds - Затримка в секундах
+ * @returns {string} - ID завдання Cloud Tasks
+ */
+async function schedulePhaseTimeout(gameId, delaySeconds) {
+  // Налаштування Cloud Tasks
+  const project = process.env.GCLOUD_PROJECT;
+  const location = 'us-central1';
+  const queue = 'game-timeouts';
+  
+  const tasksClient = new CloudTasksClient();
+  const queuePath = tasksClient.queuePath(project, location, queue);
+  
+  // Створення унікального ID завдання
+  const taskId = `game-${gameId}-timeout-${Date.now()}`;
+  
+  // Дані для передачі функції
+  const payload = {
+    gameId: gameId
+  };
+  
+  // Створення завдання
+  const task = {
+    name: tasksClient.taskPath(project, location, queue, taskId),
+    httpRequest: {
+      httpMethod: 'POST',
+      url: `https://${location}-${project}.cloudfunctions.net/gameCurrentPhaseTimeout`,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: Buffer.from(JSON.stringify(payload)).toString('base64'),
+    },
+    scheduleTime: {
+      seconds: Math.floor(Date.now() / 1000) + delaySeconds,
+    },
+  };
+  
+  // Створення завдання в черзі
+  await tasksClient.createTask({
+    parent: queuePath,
+    task: task,
+  });
+  
+  return taskId;
+}
+```
+
+**Повернення**:
+```typescript
+interface StartGameResult {
+  success: boolean;
+}
+```
+
+**Помилки**:
+- `invalid-argument`: Неправильні або неповні вхідні параметри
+- `not-found`: Гру не знайдено за вказаним ID
+- `failed-precondition`: Гра вже запущена або завершена
+- `internal`: Внутрішня помилка сервера
+
+## 4.3. leaveGame
+
+**Призначення**: Дозволяє користувачу вийти з гри, до якої він приєднався.
+
+**Тип функції**: HTTPS Callable
+
+**Вхідні параметри**:
+```typescript
+interface LeaveGameParams {
+  gameId: string;  // ID гри, з якої користувач хоче вийти
+}
+```
+
+**Дії функції**:
+1. Перевірка аутентифікації та валідація вхідних параметрів
+2. Отримання поточного стану гри з Firestore
+3. Перевірка, чи є користувач учасником гри
+4. Обробка виходу з гри залежно від статусу гри:
+   - Якщо статус 'lobby': видалення гравця зі списку учасників
+   - Якщо статус 'running': 
+     - Видалення гравця зі списку учасників
+     - Видалення гравця з черги ходів
+     - Зміна статусу всіх регіонів, що належать гравцю, на нейтральний
+   - Якщо статус 'finished' або 'skipped': повернення помилки
+5. Якщо після виходу гравця в грі не залишилося учасників, видалення гри
+6. Оновлення документа гри в Firestore
+
+**Приклад коду**:
+```javascript
+exports.leaveGame = functions.https.onCall(async (data, context) => {
+  // Перевірка аутентифікації
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+      'unauthenticated', 
+      'Для виходу з гри потрібна аутентифікація'
+    );
+  }
+
+  // Валідація вхідних параметрів
+  const { gameId } = data;
+  
+  if (!gameId) {
+    throw new functions.https.HttpsError(
+      'invalid-argument', 
+      'Не вказано ID гри'
+    );
+  }
+
+  try {
+    // Отримання даних користувача
+    const userId = context.auth.uid;
+    
+    // Отримання даних гри
+    const gameDoc = await admin.firestore().collection('games').doc(gameId).get();
+    
+    if (!gameDoc.exists) {
+      throw new functions.https.HttpsError(
+        'not-found', 
+        'Гру не знайдено'
+      );
+    }
+    
+    const gameData = gameDoc.data();
+    
+    // Перевірка, чи є користувач учасником гри
+    const playerIndex = gameData.players.findIndex(player => player.id === userId);
+    
+    if (playerIndex === -1) {
+      throw new functions.https.HttpsError(
+        'failed-precondition', 
+        'Ви не є учасником цієї гри'
+      );
+    }
+    
+    // Перевірка статусу гри
+    if (gameData.status === 'finished' || gameData.status === 'skipped') {
+      throw new functions.https.HttpsError(
+        'failed-precondition', 
+        'Неможливо вийти з завершеної гри'
+      );
+    }
+    
+    // Видалення гравця зі списку учасників
+    const updatedPlayers = gameData.players.filter(player => player.id !== userId);
+    
+    // Оновлення даних гри залежно від статусу
+    const updateData = {
+      players: updatedPlayers,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    if (gameData.status === 'running') {
+      // Видалення гравця з черги ходів
+      const updatedMoves = gameData.moves.filter(move => move.playerId !== userId);
+      updateData.moves = updatedMoves;
+      
+      // Зміна статусу всіх регіонів, що належать гравцю, на нейтральний
+      const mapStatus = { ...gameData.map.status };
+      Object.keys(mapStatus).forEach(regionId => {
+        if (mapStatus[regionId] === userId) {
+          mapStatus[regionId] = '';  // Порожній рядок означає нейтральний регіон
+        }
+      });
+      updateData['map.status'] = mapStatus;
+      
+      // Перевірка, чи потрібно пропустити поточну фазу
+      if (gameData.currentPhase && gameData.currentPhase.activePlayerId === userId) {
+        // Якщо поточний хід належить гравцю, що виходить, пропускаємо його
+        updateData.currentPhase = {
+          ...gameData.currentPhase,
+          status: 'skipped'
+        };
+      }
+    }
+    
+    // Якщо після виходу гравця в грі не залишилося учасників, видаляємо гру
+    if (updatedPlayers.length === 0) {
+      await admin.firestore().collection('games').doc(gameId).delete();
+      return { success: true, message: 'Гру видалено, оскільки всі гравці залишили її' };
+    }
+    
+    // Оновлення документа гри
+    await admin.firestore().collection('games').doc(gameId).update(updateData);
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Помилка виходу з гри:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    throw new functions.https.HttpsError(
+      'internal', 
+      'Помилка при виході з гри'
+    );
+  }
+});
+```
+
+**Повернення**:
+```typescript
+interface LeaveGameResult {
+  success: boolean;
+  message?: string;  // Опціональне повідомлення про результат
+}
+```
+
+**Помилки**:
+- `unauthenticated`: Користувач не авторизований
+- `invalid-argument`: Неправильні або неповні вхідні параметри
+- `not-found`: Гру не знайдено за вказаним ID
+- `failed-precondition`: Користувач не є учасником гри або гра вже завершена
+- `internal`: Внутрішня помилка сервера
+
+## 4.2. joinGame
+
+**Призначення**: Дозволяє користувачу приєднатися до існуючої гри за 4-значним кодом приєднання.
+
+**Тип функції**: HTTPS Callable
+
+**Вхідні параметри**:
+```typescript
+interface JoinGameParams {
+  joinCode: string;  // 4-значний код приєднання
+}
+```
+
+**Дії функції**:
+1. Перевірка аутентифікації та валідація вхідних параметрів
+2. Пошук гри в базі даних за кодом приєднання з умовами:
+   - Статус гри = 'lobby'
+   - Гра створена не більше 5 годин тому
+3. Перевірка, чи не перевищено максимальну кількість гравців
+4. Перевірка, чи не є поточний користувач уже учасником гри
+5. Додавання користувача до списку гравців з унікальним кольором
+6. Перевірка, чи досягнуто максимальної кількості гравців
+7. Якщо кількість гравців = rules.numberOfPlayers, автоматичний запуск гри (виклик функції startGame)
+8. Повернення gameId клієнту
+
+**Приклад коду**:
+```javascript
+exports.joinGame = functions.https.onCall(async (data, context) => {
+  // Перевірка аутентифікації
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+      'unauthenticated', 
+      'Для приєднання до гри потрібна аутентифікація'
+    );
+  }
+
+  // Валідація вхідних параметрів
+  const { joinCode } = data;
+  
+  if (!joinCode) {
+    throw new functions.https.HttpsError(
+      'invalid-argument', 
+      'Не вказано код приєднання до гри'
+    );
+  }
+
+  try {
+    // Отримання даних користувача
+    const userId = context.auth.uid;
+    const userDoc = await admin.firestore().collection('users').doc(userId).get();
+    const userData = userDoc.data() || {};
+    
+    // Пошук гри за кодом приєднання
+    const fiveHoursAgo = new Date();
+    fiveHoursAgo.setHours(fiveHoursAgo.getHours() - 5);
+    
+    const gamesQuery = await admin.firestore()
+      .collection('games')
+      .where('joinCode', '==', joinCode)
+      .where('status', '==', 'lobby')
+      .where('createdAt', '>', fiveHoursAgo)
+      .limit(1)
+      .get();
+    
+    if (gamesQuery.empty) {
+      throw new functions.https.HttpsError(
+        'not-found', 
+        'Гру не знайдено або термін приєднання закінчився'
+      );
+    }
+    
+    const gameDoc = gamesQuery.docs[0];
+    const gameData = gameDoc.data();
+    const gameId = gameDoc.id;
+    
+    // Перевірка, чи не перевищено максимальну кількість гравців
+    if (gameData.players.length >= gameData.rules.numberOfPlayers) {
+      throw new functions.https.HttpsError(
+        'failed-precondition', 
+        'Максимальну кількість гравців для цієї гри вже досягнуто'
+      );
+    }
+    
+    // Перевірка, чи не є користувач уже учасником гри
+    const isPlayerAlreadyJoined = gameData.players.some(player => player.id === userId);
+    
+    if (isPlayerAlreadyJoined) {
+      // Якщо користувач уже в грі, просто повертаємо ID гри
+      return { gameId };
+    }
+    
+    // Додавання користувача до списку гравців
+    const playerColor = PLAYER_COLORS[gameData.players.length]; // Константа з кольорами гравців
+    
+    const newPlayer = {
+      id: userId,
+      displayName: userData.displayName || 'Гравець',
+      avatarUrl: userData.photoURL || '',
+      color: playerColor,
+      isCreator: false
+    };
+    
+    // Оновлення документа гри
+    await admin.firestore().collection('games').doc(gameId).update({
+      players: admin.firestore.FieldValue.arrayUnion(newPlayer),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
+    // Перевірка, чи досягнуто максимальної кількості гравців
+    const updatedGameDoc = await admin.firestore().collection('games').doc(gameId).get();
+    const updatedGameData = updatedGameDoc.data();
+    
+    if (updatedGameData.players.length === updatedGameData.rules.numberOfPlayers) {
+      // Якщо досягнуто максимальної кількості гравців, автоматично запускаємо гру
+      await startGame(gameId);
+    }
+    
+    // Повернення ID гри клієнту
+    return { gameId };
+  } catch (error) {
+    console.error('Помилка приєднання до гри:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
+    throw new functions.https.HttpsError(
+      'internal', 
+      'Помилка при приєднанні до гри'
+    );
+  }
+});
+
+// Допоміжна функція для запуску гри
+async function startGame(gameId) {
+  // Викликати функцію startGame
+  // Це буде реалізовано в наступній функції, тут просто заглушка
+  const startGameFn = functions.httpsCallable('startGame');
+  await startGameFn({ gameId });
+}
+```
+
+**Повернення**:
+```typescript
+interface JoinGameResult {
+  gameId: string;  // ID гри, до якої приєднався користувач
+}
+```
+
+**Помилки**:
+- `unauthenticated`: Користувач не авторизований
+- `invalid-argument`: Неправильні або неповні вхідні параметри
+- `not-found`: Гру не знайдено за вказаним кодом
+- `failed-precondition`: Максимальну кількість гравців для гри вже досягнуто
+- `internal`: Внутрішня помилка сервера
