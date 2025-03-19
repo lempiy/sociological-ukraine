@@ -1,1 +1,109 @@
-<p>game-lobby works!</p>
+<div class="lobby-container" *ngIf="game$ | async as game">
+  <div class="lobby-card">
+    <div class="lobby-header">
+      <h1 class="title">Кімната очікування</h1>
+      <div class="game-info">
+        <span class="game-name">{{ game.name }}</span>
+        <span class="join-code"
+          >Код приєднання: <strong>{{ game.joinCode }}</strong></span
+        >
+      </div>
+    </div>
+
+    <div class="lobby-content">
+      <div class="players-section">
+        <h3 class="section-title">
+          Гравці ({{ game.players.length }}/{{ game.rules.numberOfPlayers }})
+        </h3>
+
+        <div class="players-grid">
+          <!-- Наявні гравці -->
+          <div
+            *ngFor="let player of game.players"
+            class="player-card connected"
+          >
+            <img
+              [src]="player.avatarUrl || 'assets/images/default-avatar.png'"
+              alt="Аватар гравця"
+              class="player-avatar"
+            />
+            <span class="player-name">{{ player.displayName }}</span>
+            <span class="player-status" *ngIf="player.id === currentUserId"
+              >Ви</span
+            >
+            <span class="player-creator" *ngIf="player.isCreator"
+              >Створювач</span
+            >
+          </div>
+
+          <!-- Слоти для ще не підключених гравців -->
+          <div
+            *ngFor="let empty of getEmptySlots(game)"
+            class="player-card empty"
+          >
+            <nb-icon icon="person-outline" class="empty-avatar"></nb-icon>
+            <span class="player-name">Очікування гравця...</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="game-settings">
+        <h3 class="section-title">Налаштування гри</h3>
+
+        <div class="settings-grid">
+          <div class="setting-item">
+            <span class="setting-label">Час на відповідь:</span>
+            <span class="setting-value"
+              >{{ game.rules.timeForAnswer }} сек.</span
+            >
+          </div>
+          <div class="setting-item">
+            <span class="setting-label">Час на планування:</span>
+            <span class="setting-value"
+              >{{ game.rules.timeForPlanning / 60 }} хв.</span
+            >
+          </div>
+          <div class="setting-item">
+            <span class="setting-label">Максимальна кількість раундів:</span>
+            <span class="setting-value">{{
+              game.rules.maxRounds === 0 ? "Необмежено" : game.rules.maxRounds
+            }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="waiting-message"
+        *ngIf="game.players.length < game.rules.numberOfPlayers"
+      >
+        <nb-alert status="info">
+          Очікування підключення інших гравців... ({{ game.players.length }}/{{
+            game.rules.numberOfPlayers
+          }})
+        </nb-alert>
+      </div>
+
+      <div
+        class="starting-message"
+        *ngIf="game.players.length === game.rules.numberOfPlayers"
+      >
+        <nb-alert status="success">
+          Всі гравці підключилися! Гра скоро розпочнеться...
+        </nb-alert>
+      </div>
+    </div>
+
+    <div class="lobby-actions">
+      <button nbButton status="danger" (click)="leaveGame()">
+        <nb-icon icon="log-out-outline"></nb-icon>
+        Покинути гру
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Показуємо спінер під час завантаження -->
+<div class="loading-container" *ngIf="isLoading">
+  <nb-spinner status="primary" size="large"></nb-spinner>
+  <p class="loading-text">Завантаження...</p>
+</div>

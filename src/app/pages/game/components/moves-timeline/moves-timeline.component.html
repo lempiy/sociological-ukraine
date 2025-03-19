@@ -1,0 +1,32 @@
+<div class="timeline-container">
+  <div class="timeline">
+    <!-- Минулі ходи -->
+    <div
+      *ngFor="let moveItem of displayedMoves; let i = index"
+      class="timeline-item"
+      [ngClass]="getMoveTypeClass(i)"
+    >
+      <div class="move-card">
+        <!-- Ім'я гравця -->
+        <div class="player-name" [style.color]="moveItem.player?.color">
+          {{ moveItem.player?.displayName || "Невідомий гравець" }}
+        </div>
+
+        <!-- Аватар гравця -->
+        <div class="avatar-container">
+          <img
+            [src]="moveItem.player?.avatarUrl || 'assets/default-avatar.png'"
+            alt="Player avatar"
+            class="player-avatar"
+          />
+        </div>
+
+        <!-- Номер раунду -->
+        <div class="round-number">Раунд {{ moveItem.move.round }}</div>
+      </div>
+
+      <!-- Індикатор активності для поточного ходу -->
+      <div *ngIf="moveItem.isCurrent" class="active-indicator"></div>
+    </div>
+  </div>
+</div>

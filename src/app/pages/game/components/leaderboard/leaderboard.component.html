@@ -1,0 +1,22 @@
+<div class="leaderboard-container">
+  <div class="players-list">
+    <div
+      *ngFor="let player of sortedPlayers"
+      class="player-chip"
+      [ngClass]="{ 'current-user': isCurrentUser(player.id) }"
+      [style.borderColor]="player.color"
+    >
+      <div class="avatar-container">
+        <img
+          [src]="player.avatarUrl || 'assets/default-avatar.png'"
+          alt="Avatar"
+          class="player-avatar"
+        />
+      </div>
+      <div class="player-info">
+        <span class="player-name">{{ player.displayName }}</span>
+        <span class="regions-count">{{ player.regionsCount }} регіонів</span>
+      </div>
+    </div>
+  </div>
+</div>

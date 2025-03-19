@@ -1,0 +1,98 @@
+.game-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 64px); // Відняти висоту navbar
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.loading-container,
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+
+  p {
+    margin-top: 16px;
+    font-size: 16px;
+  }
+}
+
+.error-container {
+  h2 {
+    color: #f44336;
+    margin-bottom: 16px;
+  }
+
+  button {
+    margin-top: 16px;
+  }
+}
+
+.game-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  padding: 16px;
+
+  // Лідерборд займає верхню частину
+  app-leaderboard {
+    margin-bottom: 12px;
+  }
+
+  // Таймер розміщений під лідербордом
+  app-round-timer {
+    margin-bottom: 12px;
+  }
+
+  // Карта займає основну частину екрану
+  app-map {
+    flex: 1;
+    margin-bottom: 12px;
+    border: 1px solid #eee;
+    border-radius: 4px;
+  }
+
+  // Інформація про раунд
+  .round-info {
+    margin-bottom: 12px;
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+  }
+
+  // Таймлайн ходів розміщений внизу
+  app-moves-timeline {
+    margin-bottom: 12px;
+  }
+
+  // Вікно питання відображається як модальне вікно поверх основного вмісту
+  app-question {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    background-color: white;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    width: 80%;
+    max-width: 600px;
+  }
+}
+
+// Адаптивний дизайн для мобільних пристроїв
+@media (max-width: 768px) {
+  .game-content {
+    padding: 8px;
+
+    app-question {
+      width: 95%;
+    }
+  }
+}

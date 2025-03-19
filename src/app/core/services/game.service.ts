@@ -54,17 +54,17 @@ export interface CreateGameParams {
   providedIn: 'root'
 })
 export class GameService {
-  
+
   constructor(
     private firestore: Firestore,
     private functions: Functions,
     private router: Router
-  ) {}
+  ) { }
 
   // Створення нової гри
   createGame(params: CreateGameParams): Observable<{ gameId: string }> {
     const createGameFn = httpsCallable(this.functions, 'createGame');
-    
+
     return from(createGameFn(params)).pipe(
       map(result => result.data as { gameId: string }),
       tap(({ gameId }) => {
@@ -80,7 +80,7 @@ export class GameService {
   // Приєднання до існуючої гри
   joinGame(joinCode: string): Observable<{ gameId: string }> {
     const joinGameFn = httpsCallable(this.functions, 'joinGame');
-    
+
     return from(joinGameFn({ joinCode })).pipe(
       map(result => result.data as { gameId: string }),
       tap(({ gameId }) => {
@@ -96,7 +96,7 @@ export class GameService {
   // Вихід з гри
   leaveGame(gameId: string): Observable<{ success: boolean }> {
     const leaveGameFn = httpsCallable(this.functions, 'leaveGame');
-    
+
     return from(leaveGameFn({ gameId })).pipe(
       map(result => result.data as { success: boolean }),
       tap(() => {
@@ -113,8 +113,8 @@ export class GameService {
   getGame(gameId: string): Observable<Game> {
     return new Observable<Game>(observer => {
       const gameRef = doc(this.firestore, `games/${gameId}`);
-      
-      return onSnapshot(gameRef, 
+
+      return onSnapshot(gameRef,
         (docSnapshot) => {
           if (docSnapshot.exists()) {
             const gameData = docSnapshot.data() as Game;
@@ -133,7 +133,7 @@ export class GameService {
   // Вибір регіону у фазі планування
   setPlanningResult(gameId: string, regionId: string): Observable<{ success: boolean }> {
     const setPlanningResultFn = httpsCallable(this.functions, 'setPlanningResult');
-    
+
     return from(setPlanningResultFn({ gameId, regionId })).pipe(
       map(result => result.data as { success: boolean }),
       catchError(error => {
@@ -146,7 +146,7 @@ export class GameService {
   // Відповідь на питання
   setAnswer(gameId: string, variant?: number, number?: number): Observable<{ success: boolean }> {
     const setAnswerFn = httpsCallable(this.functions, 'setAnswer');
-    
+
     return from(setAnswerFn({ gameId, variant, number })).pipe(
       map(result => result.data as { success: boolean }),
       catchError(error => {

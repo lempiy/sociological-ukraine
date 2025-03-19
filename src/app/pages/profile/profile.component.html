@@ -1,1 +1,35 @@
-<p>profile works!</p>
+<div class="profile-container">
+  <div class="user-profile-card">
+    <div class="user-avatar-container">
+      <img
+        [src]="(user$ | async)?.photoURL || 'assets/images/default-avatar.png'"
+        alt="Аватар користувача"
+        class="user-avatar"
+      />
+    </div>
+
+    <div class="user-info">
+      <h2 class="user-name">{{ (user$ | async)?.displayName }}</h2>
+      <p class="user-email">{{ (user$ | async)?.email }}</p>
+    </div>
+
+    <div class="user-stats" *ngIf="userStats$ | async as stats">
+      <div class="stat-item">
+        <div class="stat-value">{{ stats.gamesPlayed }}</div>
+        <div class="stat-label">Ігор зіграно</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">{{ stats.gamesWon }}</div>
+        <div class="stat-label">Перемог</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">{{ stats.questionsAnswered }}</div>
+        <div class="stat-label">Правильних відповідей</div>
+      </div>
+    </div>
+
+    <button nbButton status="danger" fullWidth (click)="logout()">
+      Вийти з профілю
+    </button>
+  </div>
+</div>

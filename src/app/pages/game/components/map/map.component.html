@@ -1,0 +1,50 @@
+<div class="map-wrapper">
+  <div id="map-container" #map class="map-container"></div>
+
+  <!-- Інформаційний оверлей для фази планування -->
+  <div
+    *ngIf="
+      currentPhase.status === 'planning' &&
+      currentPhase.activePlayerId === currentUserId
+    "
+    class="map-overlay planning-overlay"
+  >
+    <div class="overlay-content">
+      <nb-icon icon="map-outline"></nb-icon>
+      <span>Оберіть регіон для захоплення</span>
+    </div>
+  </div>
+
+  <!-- Інформаційний оверлей для фази post-planning -->
+  <div
+    *ngIf="currentPhase.status === 'post-planning'"
+    class="map-overlay post-planning-overlay"
+  >
+    <div class="overlay-content">
+      <nb-icon icon="pin-outline"></nb-icon>
+      <span>Регіон обрано: {{ currentPhase.regionId }}</span>
+    </div>
+  </div>
+
+  <!-- Інформаційний оверлей для фаз post-answer та skipped -->
+  <div
+    *ngIf="
+      currentPhase.status === 'post-answer' || currentPhase.status === 'skipped'
+    "
+    class="map-overlay result-overlay"
+  >
+    <div class="overlay-content">
+      <nb-icon
+        [icon]="
+          currentPhase.status === 'post-answer'
+            ? 'checkmark-circle-outline'
+            : 'close-circle-outline'
+        "
+      ></nb-icon>
+      <span *ngIf="currentPhase.status === 'post-answer'"
+        >Результат зафіксовано</span
+      >
+      <span *ngIf="currentPhase.status === 'skipped'">Хід пропущено</span>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,113 @@
+<div class="question-container">
+  <div class="question-header">
+    <div class="region-name">{{ getRegionDisplayName() }}</div>
+    <div class="header-actions">
+      <button nbButton ghost size="small" (click)="close.emit()">
+        <nb-icon icon="close-outline"></nb-icon>
+      </button>
+    </div>
+  </div>
+
+  <div class="question-body">
+    <!-- Зображення питання (якщо є) -->
+    <div *ngIf="question.imageUrl" class="question-image">
+      <img [src]="question.imageUrl" alt="Зображення питання" />
+    </div>
+
+    <!-- Текст питання -->
+    <div class="question-text">
+      {{ question.text }}
+    </div>
+
+    <!-- Форма відповіді -->
+    <form [formGroup]="answerForm" (ngSubmit)="onSubmit()" class="answer-form">
+      <!-- Варіанти відповідей -->
+      <div *ngIf="question.type === 'variant'" class="variants-container">
+        <div *ngFor="let variant of question.variants" class="variant-item">
+          <nb-radio
+            [value]="variant.id"
+            formControlName="variant"
+            [disabled]="!canAnswer() || answeredAlready"
+          >
+            <div class="variant-content">
+              {{ variant.text }}
+              <img
+                *ngIf="variant.imageUrl"
+                [src]="variant.imageUrl"
+                alt="Зображення варіанту"
+                class="variant-image"
+              />
+            </div>
+          </nb-radio>
+        </div>
+      </div>
+
+      <!-- Числова відповідь -->
+      <div *ngIf="question.type === 'number'" class="number-input-container">
+        <nb-form-field>
+          <input
+            nbInput
+            fullWidth
+            type="number"
+            formControlName="number"
+            placeholder="Введіть числову відповідь"
+            [disabled]="!canAnswer() || answeredAlready"
+          />
+          <nb-icon nbSuffix icon="hash-outline"></nb-icon>
+        </nb-form-field>
+
+        <div *ngIf="question.numberAnswer?.units" class="units-label">
+          {{ question.numberAnswer.units }}
+        </div>
+
+        <button
+          nbButton
+          status="primary"
+          type="submit"
+          [disabled]="answerForm.invalid || !canAnswer() || answeredAlready"
+        >
+          Відповісти
+        </button>
+      </div>
+
+      <!-- Кнопка відправки для варіантів -->
+      <button
+        *ngIf="question.type === 'variant'"
+        nbButton
+        status="primary"
+        type="submit"
+        class="submit-button"
+        [disabled]="answerForm.invalid || !canAnswer() || answeredAlready"
+      >
+        Відповісти
+      </button>
+    </form>
+  </div>
+
+  <!-- Таймер -->
+  <div class="timer-container">
+    <div class="timer-label">
+      Час на відповідь: {{ formatTime(timeRemaining) }}
+    </div>
+    <nb-progress-bar
+      [value]="progress"
+      [status]="
+        progress < 20 ? 'danger' : progress < 50 ? 'warning' : 'success'
+      "
+      size="small"
+    >
+    </nb-progress-bar>
+  </div>
+
+  <!-- Повідомлення для спостерігачів -->
+  <div *ngIf="!canAnswer()" class="observer-message">
+    <nb-icon icon="eye-outline"></nb-icon>
+    <span>Ви спостерігаєте за ходом гри</span>
+  </div>
+
+  <!-- Повідомлення про успішну відповідь -->
+  <div *ngIf="answeredAlready" class="answer-submitted">
+    <nb-icon icon="checkmark-circle-outline"></nb-icon>
+    <span>Вашу відповідь прийнято!</span>
+  </div>
+</div>

@@ -1,1 +1,114 @@
-<p>create-game works!</p>
+<div class="create-game-container">
+  <div class="create-game-card">
+    <h1 class="title">Створення нової гри</h1>
+
+    <form [formGroup]="gameForm" (ngSubmit)="createGame()" class="game-form">
+      <!-- Назва гри -->
+      <div class="form-group">
+        <label for="gameName" class="form-label">Назва гри</label>
+        <input
+          nbInput
+          fullWidth
+          type="text"
+          id="gameName"
+          formControlName="gameName"
+          placeholder="Введіть назву гри"
+        />
+        <div
+          *ngIf="
+            gameForm.get('gameName')?.invalid &&
+            gameForm.get('gameName')?.touched
+          "
+          class="form-error"
+        >
+          <small *ngIf="gameForm.get('gameName')?.errors?.['required']"
+            >Назва гри обов'язкова</small
+          >
+          <small *ngIf="gameForm.get('gameName')?.errors?.['minlength']"
+            >Назва гри повинна містити щонайменше 3 символи</small
+          >
+        </div>
+      </div>
+
+      <!-- Кількість гравців -->
+      <div class="form-group">
+        <label class="form-label">Кількість гравців</label>
+        <nb-radio-group
+          formControlName="numberOfPlayers"
+          class="player-count-group"
+        >
+          <nb-radio *ngFor="let count of playerCounts" [value]="count">{{
+            count
+          }}</nb-radio>
+        </nb-radio-group>
+      </div>
+
+      <!-- Час на відповідь -->
+      <div class="form-group">
+        <label for="timeForAnswer" class="form-label">Час на відповідь</label>
+        <nb-select
+          id="timeForAnswer"
+          formControlName="timeForAnswer"
+          fullWidth
+          placeholder="Виберіть час"
+        >
+          <nb-option *ngFor="let time of answerTimes" [value]="time.value">{{
+            time.label
+          }}</nb-option>
+        </nb-select>
+      </div>
+
+      <!-- Час на планування -->
+      <div class="form-group">
+        <label for="timeForPlanning" class="form-label"
+          >Час на планування</label
+        >
+        <nb-select
+          id="timeForPlanning"
+          formControlName="timeForPlanning"
+          fullWidth
+          placeholder="Виберіть час"
+        >
+          <nb-option *ngFor="let time of planningTimes" [value]="time.value">{{
+            time.label
+          }}</nb-option>
+        </nb-select>
+      </div>
+
+      <!-- Максимальна кількість раундів -->
+      <div class="form-group">
+        <label for="maxRounds" class="form-label"
+          >Максимальна кількість раундів</label
+        >
+        <nb-select
+          id="maxRounds"
+          formControlName="maxRounds"
+          fullWidth
+          placeholder="Виберіть кількість раундів"
+        >
+          <nb-option [value]="0">Необмежено</nb-option>
+          <nb-option *ngFor="let round of maxRoundsOptions" [value]="round">{{
+            round
+          }}</nb-option>
+        </nb-select>
+      </div>
+
+      <!-- Кнопки управління -->
+      <div class="form-actions">
+        <button nbButton status="basic" type="button" [routerLink]="['/']">
+          Відміна
+        </button>
+        <button
+          nbButton
+          status="primary"
+          type="submit"
+          [disabled]="gameForm.invalid || isLoading"
+        >
+          <nb-icon icon="plus-outline" *ngIf="!isLoading"></nb-icon>
+          <nb-spinner size="small" *ngIf="isLoading"></nb-spinner>
+          Створити гру
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

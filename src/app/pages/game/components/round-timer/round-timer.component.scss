@@ -1,0 +1,42 @@
+.timer-container {
+  width: 100%;
+  padding: 10px;
+  background-color: #f0f0f0;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.timer-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.timer-label {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+}
+
+.timer-value {
+  font-size: 18px;
+  font-weight: bold;
+  font-family: monospace;
+
+  // Різні кольори залежно від часу, що залишився
+  color: var(--timer-color, #333);
+}
+
+// Оновлення кольору у залежності від прогресу
+:host {
+  --timer-color: #4caf50;
+
+  &.warning {
+    --timer-color: #ff9800;
+  }
+
+  &.danger {
+    --timer-color: #f44336;
+  }
+}

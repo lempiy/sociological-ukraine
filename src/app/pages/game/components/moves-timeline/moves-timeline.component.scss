@@ -1,0 +1,141 @@
+.timeline-container {
+  width: 100%;
+  overflow-x: auto;
+  padding: 10px 0;
+}
+
+.timeline {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 100%;
+  position: relative;
+
+  // Лінія таймлайну
+  &::before {
+    content: "";
+    position: absolute;
+    height: 2px;
+    background-color: #e0e0e0;
+    top: 50%;
+    left: 0;
+    right: 0;
+    z-index: 0;
+  }
+}
+
+.timeline-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 15px;
+  position: relative;
+  z-index: 1;
+
+  .move-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 10px;
+    width: 120px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+    &:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .player-name {
+      font-size: 12px;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 8px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+    }
+
+    .avatar-container {
+      margin-bottom: 8px;
+    }
+
+    .player-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .round-number {
+      font-size: 11px;
+      color: #666;
+    }
+  }
+
+  .active-indicator {
+    width: 12px;
+    height: 12px;
+    background-color: #4caf50;
+    border-radius: 50%;
+    margin-top: 5px;
+    animation: pulse 1.5s infinite;
+  }
+}
+
+// Стилі для різних типів ходів
+.past-move {
+  .move-card {
+    opacity: 0.7;
+    transform: scale(0.9);
+  }
+}
+
+.current-move {
+  .move-card {
+    border: 2px solid #4caf50;
+    transform: scale(1.05);
+    z-index: 2;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+}
+
+.future-move {
+  .move-card {
+    opacity: 0.6;
+    transform: scale(0.85);
+  }
+}
+
+// Анімація пульсації для індикатора активності
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 5px rgba(76, 175, 80, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+  }
+}
+
+// Адаптивність для мобільних пристроїв
+@media (max-width: 768px) {
+  .timeline-item {
+    padding: 0 5px;
+
+    .move-card {
+      width: 90px;
+      padding: 8px;
+
+      .player-avatar {
+        width: 40px;
+        height: 40px;
+      }
+    }
+  }
+}

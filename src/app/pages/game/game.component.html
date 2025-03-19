@@ -1,1 +1,67 @@
-<p>game works!</p>
+<div class="game-container">
+  <!-- Екран завантаження -->
+  <div *ngIf="loading" class="loading-container">
+    <nb-spinner status="primary" size="large"></nb-spinner>
+    <p>Завантаження гри...</p>
+  </div>
+
+  <!-- Повідомлення про помилку -->
+  <div *ngIf="error" class="error-container">
+    <h2>Помилка</h2>
+    <p>{{ error }}</p>
+    <button nbButton status="primary" routerLink="/">На головну</button>
+  </div>
+
+  <!-- Основний вміст гри -->
+  <div *ngIf="!loading && !error && gameData" class="game-content">
+    <!-- Лідерборд гравців -->
+    <app-leaderboard
+      [players]="gameData.players"
+      [mapStatus]="gameData.map.status"
+      [currentUserId]="userData.id"
+    ></app-leaderboard>
+
+    <!-- Таймер планування (видимий під час фази планування) -->
+    <app-round-timer
+      *ngIf="
+        gameData.currentPhase.status === 'planning' ||
+        gameData.currentPhase.status === 'answer'
+      "
+      [phase]="gameData.currentPhase"
+      [rules]="gameData.rules"
+    ></app-round-timer>
+
+    <!-- Інтерактивна карта України -->
+    <app-map
+      *ngIf="mapData"
+      [mapData]="mapData"
+      [mapStatus]="gameData.map.status"
+      [currentUserId]="userData.id"
+      [currentPhase]="gameData.currentPhase"
+      (regionSelect)="onRegionSelect($event)"
+    ></app-map>
+
+    <!-- Інформація про раунд -->
+    <div class="round-info">
+      <span>Раунд: {{ gameData.currentRound }}</span>
+    </div>
+
+    <!-- Таймлайн ходів -->
+    <app-moves-timeline
+      [moves]="gameData.moves"
+      [players]="gameData.players"
+    ></app-moves-timeline>
+
+    <!-- Вікно питання (видиме під час фази відповіді) -->
+    <app-question
+      *ngIf="gameData.currentPhase.status === 'answer'"
+      [question]="gameData.currentPhase.question"
+      [regionId]="gameData.currentPhase.regionId"
+      [timeLeft]="gameData.rules.timeForAnswer"
+      [phaseStartTime]="gameData.currentPhase.startAt"
+      [isActivePlayer]="isActivePlayer()"
+      [isContestedPlayer]="isContestedPlayer()"
+      (answerSubmit)="onAnswer($event)"
+    ></app-question>
+  </div>
+</div>

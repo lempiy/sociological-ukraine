@@ -1,0 +1,17 @@
+<div class="timer-container">
+  <div class="timer-content">
+    <div class="timer-label">
+      <span *ngIf="phase.status === 'planning'">Час на планування:</span>
+      <span *ngIf="phase.status === 'answer'">Час на відповідь:</span>
+    </div>
+    <div class="timer-value">{{ formatTime(timeLeft) }}</div>
+  </div>
+
+  <nb-progress-bar
+    [value]="progress"
+    [status]="progress < 20 ? 'danger' : progress < 50 ? 'warning' : 'success'"
+    [displayValue]="false"
+    size="small"
+  >
+  </nb-progress-bar>
+</div>

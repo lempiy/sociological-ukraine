@@ -1,1 +1,81 @@
-<p>join-game works!</p>
+<div class="join-game-container">
+  <div class="join-game-card">
+    <h1 class="title">Приєднатися до гри</h1>
+
+    <form [formGroup]="joinForm" (ngSubmit)="joinGame()" class="join-form">
+      <div class="form-group">
+        <label for="joinCode" class="form-label"
+          >Введіть 4-значний код приєднання:</label
+        >
+        <input
+          nbInput
+          fullWidth
+          type="text"
+          id="joinCode"
+          formControlName="joinCode"
+          placeholder="Наприклад: 1234"
+          maxlength="4"
+          autocomplete="off"
+        />
+        <div
+          *ngIf="
+            joinForm.get('joinCode')?.invalid &&
+            joinForm.get('joinCode')?.touched
+          "
+          class="form-error"
+        >
+          <small *ngIf="joinForm.get('joinCode')?.errors?.['required']"
+            >Код приєднання обов'язковий</small
+          >
+          <small *ngIf="joinForm.get('joinCode')?.errors?.['minlength']"
+            >Код приєднання повинен містити 4 цифри</small
+          >
+          <small *ngIf="joinForm.get('joinCode')?.errors?.['pattern']"
+            >Код приєднання повинен містити тільки цифри</small
+          >
+        </div>
+      </div>
+
+      <div class="auth-message" *ngIf="!(isAuthenticated$ | async)">
+        <nb-alert status="warning">
+          Для приєднання до гри необхідно увійти в систему через Google
+        </nb-alert>
+      </div>
+
+      <div class="form-actions">
+        <button nbButton status="basic" type="button" [routerLink]="['/']">
+          <nb-icon icon="arrow-back-outline"></nb-icon>
+          Головне меню
+        </button>
+        <button
+          nbButton
+          status="primary"
+          type="submit"
+          [disabled]="
+            joinForm.invalid || isLoading || !(isAuthenticated$ | async)
+          "
+        >
+          <nb-icon icon="log-in-outline" *ngIf="!isLoading"></nb-icon>
+          <nb-spinner size="small" *ngIf="isLoading"></nb-spinner>
+          Приєднатися
+        </button>
+      </div>
+    </form>
+
+    <!-- Зображення карти України у фоні -->
+    <div class="map-background">
+      <img
+        src="assets/images/ukraine-map-outline.svg"
+        alt="Карта України"
+        class="ukraine-map"
+      />
+    </div>
+  </div>
+</div>
+
+<!-- Відображення помилок приєднання -->
+<div class="join-error" *ngIf="errorMessage">
+  <nb-alert status="danger" closable (close)="errorMessage = ''">
+    {{ errorMessage }}
+  </nb-alert>
+</div>

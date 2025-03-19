@@ -1,33 +1,30 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * const {onCall} = require("firebase-functions/v2/https");
- * const {onDocumentWritten} = require("firebase-functions/v2/firestore");
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
+// functions/index.js
+const functions = require("firebase-functions/v1");
+const admin = require("firebase-admin");
 
-const functions = require('firebase-functions');
-const admin = require('firebase-admin');
+// Ініціалізація Firebase Admin
 admin.initializeApp();
 
-// Create and deploy your first functions
-// https://firebase.google.com/docs/functions/get-started
+const regionFunctions = functions.region("europe-west1");
 
-// exports.helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+// Імпорт модулів з окремих файлів
+const gameCreationModule = require("./modules/game-creation");
+const gameOperationsModule = require("./modules/game-operations");
+const gameAnswersModule = require("./modules/game-answers");
+const gameTimeoutsModule = require("./modules/game-timeouts");
+const gameUtilsModule = require("./modules/game-utils");
 
+// Експорт всіх Cloud Functions
 
-exports.createGame = functions.https.onCall(async (data, context) => {
-    // Перевірка аутентифікації
-    if (!context.auth) {
-      throw new functions.https.HttpsError('unauthenticated', 'Потрібна аутентифікація');
-    }
-    
-    // Логіка ходу гравця
-    // ...
-    
-    return { success: true };
-  });
+// Функції для створення та керування грою
+exports.createGame = gameCreationModule.createGame;
+exports.joinGame = gameCreationModule.joinGame;
+exports.startGame = gameOperationsModule.startGame;
+exports.leaveGame = gameOperationsModule.leaveGame;
+
+// Функції для ігрового процесу
+exports.setPlanningResult = gameAnswersModule.setPlanningResult;
+exports.setAnswer = gameAnswersModule.setAnswer;
+
+// Функція для обробки таймаутів
+exports.gameCurrentPhaseTimeout = gameTimeoutsModule.gameCurrentPhaseTimeout;
