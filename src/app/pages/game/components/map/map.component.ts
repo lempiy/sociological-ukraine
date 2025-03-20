@@ -38,7 +38,10 @@ export class MapComponent implements OnInit, OnChanges, OnDestroy, AfterViewInit
 
   ngAfterViewInit() {
     // Доступ до нативного елемента
-    this.mapService.initMap(this.mapData, this.mapStatus);
+    setTimeout(() => {
+      this.mapService.initMap(this.mapData, this.mapStatus);
+    })
+
   }
 
   ngOnChanges(changes: SimpleChanges): void {

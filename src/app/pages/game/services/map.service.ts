@@ -15,6 +15,7 @@ export class MapService {
     private height = 0;
     private regions: any = {};
     private currentMapStatus: any = {};
+    private originalGeoJson: d3.ExtendedFeature | d3.ExtendedFeatureCollection | d3.GeoGeometryObjects | d3.ExtendedGeometryCollection | null = null;
 
     // Подія вибору регіону
     private regionSelectSubject = new Subject<string>();
@@ -32,6 +33,7 @@ export class MapService {
         this.zone.runOutsideAngular(() => {
             console.log('rebuild')
             this.currentMapStatus = mapStatus;
+            this.originalGeoJson = geoJson;
 
             // Очищаємо попередню карту, якщо вона існує
             d3.select('#map-container').selectAll('*').remove();
@@ -207,17 +209,30 @@ export class MapService {
      */
     onResize(): void {
         const container = document.getElementById('map-container');
-        if (!container || !this.svg) return;
+        if (!container || !this.svg || !this.originalGeoJson) return;
 
+        // Отримуємо нові розміри контейнера
         this.width = container.clientWidth;
-        this.height = container.clientHeight;
+        this.height = container.clientHeight || 500;
 
+        // Оновлюємо розміри SVG
         this.svg
             .attr('width', this.width)
             .attr('height', this.height);
 
-        // Оновлюємо проекцію та перемальовуємо карту
-        // Ця функціональність вимагатиме збереження оригінального GeoJSON
-        // і може бути реалізована при необхідності
+        // Важливо! Оновлюємо проекцію з новими розмірами
+        this.projection.fitSize([this.width, this.height], this.originalGeoJson);
+
+        // Оновлюємо path генератор з новою проекцією
+        this.path = d3.geoPath().projection(this.projection);
+
+        // Перемальовуємо всі шляхи з новим path генератором
+        this.map.selectAll('path')
+            .attr('d', this.path);
+
+        // Перераховуємо координати для текстових міток
+        this.map.selectAll('text')
+            .attr('x', (d: any) => this.path.centroid(d)[0])
+            .attr('y', (d: any) => this.path.centroid(d)[1]);
     }
 }
