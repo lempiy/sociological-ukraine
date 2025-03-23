@@ -2,7 +2,13 @@
   <div class="question-header">
     <div class="region-name">{{ getRegionDisplayName() }}</div>
     <div class="header-actions">
-      <button nbButton ghost size="small" (click)="close.emit()">
+      <button
+        nbButton
+        ghost
+        size="small"
+        (click)="close.emit()"
+        [disabled]="isProcessing"
+      >
         <nb-icon icon="close-outline"></nb-icon>
       </button>
     </div>
@@ -27,7 +33,7 @@
           <nb-radio
             [value]="variant.id"
             formControlName="variant"
-            [disabled]="!canAnswer() || answeredAlready"
+            [disabled]="!canAnswer() || answeredAlready || isProcessing"
           >
             <div class="variant-content">
               {{ variant.text }}
@@ -51,7 +57,7 @@
             type="number"
             formControlName="number"
             placeholder="Введіть числову відповідь"
-            [disabled]="!canAnswer() || answeredAlready"
+            [disabled]="!canAnswer() || answeredAlready || isProcessing"
           />
           <nb-icon nbSuffix icon="hash-outline"></nb-icon>
         </nb-form-field>
@@ -64,7 +70,12 @@
           nbButton
           status="primary"
           type="submit"
-          [disabled]="answerForm.invalid || !canAnswer() || answeredAlready"
+          [disabled]="
+            answerForm.invalid ||
+            !canAnswer() ||
+            answeredAlready ||
+            isProcessing
+          "
         >
           Відповісти
         </button>
@@ -77,7 +88,9 @@
         status="primary"
         type="submit"
         class="submit-button"
-        [disabled]="answerForm.invalid || !canAnswer() || answeredAlready"
+        [disabled]="
+          answerForm.invalid || !canAnswer() || answeredAlready || isProcessing
+        "
       >
         Відповісти
       </button>
@@ -100,14 +113,19 @@
   </div>
 
   <!-- Повідомлення для спостерігачів -->
-  <div *ngIf="!canAnswer()" class="observer-message">
+  <div *ngIf="!canAnswer() && !isProcessing" class="observer-message">
     <nb-icon icon="eye-outline"></nb-icon>
     <span>Ви спостерігаєте за ходом гри</span>
   </div>
 
   <!-- Повідомлення про успішну відповідь -->
-  <div *ngIf="answeredAlready" class="answer-submitted">
+  <div *ngIf="answeredAlready && !isProcessing" class="answer-submitted">
     <nb-icon icon="checkmark-circle-outline"></nb-icon>
     <span>Вашу відповідь прийнято!</span>
+  </div>
+
+  <!-- Повідомлення про обробку відповіді -->
+  <div *ngIf="isProcessing" class="processing-message">
+    <nb-spinner size="small" message="Обробка відповіді..."></nb-spinner>
   </div>
 </div>

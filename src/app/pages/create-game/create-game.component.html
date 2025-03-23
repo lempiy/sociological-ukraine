@@ -105,8 +105,11 @@
           [disabled]="gameForm.invalid || isLoading"
         >
           <nb-icon icon="plus-outline" *ngIf="!isLoading"></nb-icon>
-          <nb-spinner size="small" *ngIf="isLoading"></nb-spinner>
-          Створити гру
+          <nb-spinner
+            size="small"
+            *ngIf="isLoading"
+            message="Створити гру"
+          ></nb-spinner>
         </button>
       </div>
     </form>

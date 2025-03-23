@@ -53,6 +53,7 @@ export class GameComponent implements OnInit, OnDestroy {
 
   // Змінні для контролю UI
   showQuestion = false;
+  isProcessingAction = false; // Додаємо новий прапорець для відстеження стану обробки
 
   constructor(
     private route: ActivatedRoute,
@@ -64,6 +65,7 @@ export class GameComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit(): void {
+    console.log('onInit', this.loading)
     // Отримуємо параметр gameId з URL
     this.route.params.subscribe(params => {
       this.gameId = params['gameId'];
@@ -166,6 +168,11 @@ export class GameComponent implements OnInit, OnDestroy {
 
   // Обробник вибору регіону користувачем
   onRegionSelect(regionId: string): void {
+    // Перевіряємо, чи не в процесі обробки запиту
+    if (this.isProcessingAction) {
+      return;
+    }
+
     // Перевіряємо, чи зараз хід користувача
     if (this.gameData.currentPhase.activePlayerId !== this.userData.id) {
       return;
@@ -181,20 +188,30 @@ export class GameComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Встановлюємо статус обробки
+    this.isProcessingAction = true;
+
     // Викликаємо сервіс для вибору регіону
     this.gameService.setPlanningResult(this.gameId!, regionId)
       .subscribe({
         next: () => {
           console.log('Region selected successfully');
+          this.isProcessingAction = false; // Знімаємо прапорець після успішної обробки
         },
         error: (error: any) => {
           console.error('Error selecting region:', error);
+          this.isProcessingAction = false; // Знімаємо прапорець у разі помилки
         }
       });
   }
 
   // Обробник відповіді користувача на запитання
   onAnswer(answerData: any): void {
+    // Перевіряємо, чи не в процесі обробки запиту
+    if (this.isProcessingAction) {
+      return;
+    }
+
     // Перевіряємо, чи стадія відповіді
     if (this.gameData.currentPhase.status !== 'answer') {
       return;
@@ -217,15 +234,20 @@ export class GameComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Встановлюємо статус обробки
+    this.isProcessingAction = true;
+
     // Передаємо відповідь через сервіс в залежності від типу питання
     if (this.gameData.currentPhase.question.type === 'variant') {
       this.gameService.setAnswer(this.gameId!, answerData.variant)
         .subscribe({
           next: () => {
             console.log('Answer submitted successfully');
+            this.isProcessingAction = false; // Знімаємо прапорець після успішної обробки
           },
           error: (error: any) => {
             console.error('Error submitting answer:', error);
+            this.isProcessingAction = false; // Знімаємо прапорець у разі помилки
           }
         });
     } else if (this.gameData.currentPhase.question.type === 'number') {
@@ -233,9 +255,11 @@ export class GameComponent implements OnInit, OnDestroy {
         .subscribe({
           next: () => {
             console.log('Answer submitted successfully');
+            this.isProcessingAction = false; // Знімаємо прапорець після успішної обробки
           },
           error: (error: any) => {
             console.error('Error submitting answer:', error);
+            this.isProcessingAction = false; // Знімаємо прапорець у разі помилки
           }
         });
     }

@@ -16,6 +16,7 @@ export class MapComponent implements OnInit, OnChanges, OnDestroy, AfterViewInit
   @Input() mapData: any = {};
   @Input() currentUserId: string = '';
   @Input() currentPhase: any = {};
+  @Input() isProcessing: boolean = false; // Новий параметр для блокування під час обробки запиту
 
   @ViewChild('map')
   map!: ElementRef<HTMLDivElement>;
@@ -41,7 +42,6 @@ export class MapComponent implements OnInit, OnChanges, OnDestroy, AfterViewInit
     setTimeout(() => {
       this.mapService.initMap(this.mapData, this.mapStatus);
     })
-
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -62,6 +62,11 @@ export class MapComponent implements OnInit, OnChanges, OnDestroy, AfterViewInit
 
   // Обробник кліку на регіон
   onRegionClick(regionId: string): void {
+    // Якщо обробка вже йде, ігноруємо нові кліки
+    if (this.isProcessing) {
+      return;
+    }
+
     // Перевіряємо, чи можна вибрати регіон на поточній фазі
     if (this.currentPhase.status === 'planning' &&
       this.currentPhase.activePlayerId === this.currentUserId) {

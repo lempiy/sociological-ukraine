@@ -86,6 +86,32 @@
   }
 }
 
+// Стилі для оверлею обробки дій
+.processing-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.7);
+  z-index: 2000; // Вищий z-index ніж у вікна питання
+  backdrop-filter: blur(2px); // Додаткове розмиття (працює не у всіх браузерах)
+
+  nb-spinner {
+    margin-bottom: 16px;
+  }
+
+  p {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+  }
+}
+
 // Адаптивний дизайн для мобільних пристроїв
 @media (max-width: 768px) {
   .game-content {

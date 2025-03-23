@@ -125,21 +125,28 @@
   }
 }
 
+// Загальні стилі для всіх типів повідомлень внизу компонента
 .observer-message,
-.answer-submitted {
+.answer-submitted,
+.processing-message {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   padding: 12px;
-  background-color: #f0f0f0;
   font-size: 14px;
-  color: #666;
   border-top: 1px solid #e0e0e0;
 
-  nb-icon {
+  nb-icon,
+  nb-spinner {
     font-size: 20px;
   }
+}
+
+// Специфічні стилі для кожного типу повідомлення
+.observer-message {
+  background-color: #f0f0f0;
+  color: #666;
 }
 
 .answer-submitted {
@@ -149,6 +156,12 @@
   nb-icon {
     color: #2e7d32;
   }
+}
+
+.processing-message {
+  background-color: #e3f2fd; // Light blue background
+  color: #1976d2; // Blue text
+  border-top: 1px solid #bbdefb;
 }
 
 // Адаптивність для мобільних пристроїв

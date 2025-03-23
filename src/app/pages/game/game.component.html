@@ -1,8 +1,11 @@
 <div class="game-container">
   <!-- Екран завантаження -->
   <div *ngIf="loading" class="loading-container">
-    <nb-spinner status="primary" size="large"></nb-spinner>
-    <p>Завантаження гри...</p>
+    <nb-spinner
+      status="primary"
+      size="large"
+      message="Завантаження гри..."
+    ></nb-spinner>
   </div>
 
   <!-- Повідомлення про помилку -->
@@ -38,6 +41,7 @@
       [mapStatus]="gameData.map.status"
       [currentUserId]="userData.id"
       [currentPhase]="gameData.currentPhase"
+      [isProcessing]="isProcessingAction"
       (regionSelect)="onRegionSelect($event)"
     ></app-map>
 
@@ -61,7 +65,13 @@
       [phaseStartTime]="gameData.currentPhase.startAt"
       [isActivePlayer]="isActivePlayer()"
       [isContestedPlayer]="isContestedPlayer()"
+      [isProcessing]="isProcessingAction"
       (answerSubmit)="onAnswer($event)"
     ></app-question>
+
+    <!-- Оверлей під час обробки дій -->
+    <div *ngIf="isProcessingAction" class="processing-overlay">
+      <nb-spinner status="primary" message="Обробка дії..."></nb-spinner>
+    </div>
   </div>
 </div>

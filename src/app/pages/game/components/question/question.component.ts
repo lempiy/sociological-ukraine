@@ -2,7 +2,7 @@ import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy, S
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { interval, Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
-import { NbButtonModule, NbIconModule, NbProgressBarModule, NbRadioModule, NbFormFieldModule, NbInputModule } from '@nebular/theme';
+import { NbButtonModule, NbIconModule, NbProgressBarModule, NbRadioModule, NbFormFieldModule, NbInputModule, NbSpinnerModule } from '@nebular/theme';
 
 @Component({
   selector: 'app-question',
@@ -17,7 +17,8 @@ import { NbButtonModule, NbIconModule, NbProgressBarModule, NbRadioModule, NbFor
     NbProgressBarModule,
     NbRadioModule,
     NbFormFieldModule,
-    NbInputModule
+    NbInputModule,
+    NbSpinnerModule
   ]
 })
 export class QuestionComponent implements OnInit, OnChanges, OnDestroy {
@@ -27,6 +28,7 @@ export class QuestionComponent implements OnInit, OnChanges, OnDestroy {
   @Input() phaseStartTime: any; // Firebase Timestamp
   @Input() isActivePlayer: boolean = false;
   @Input() isContestedPlayer: boolean = false;
+  @Input() isProcessing: boolean = false; // Новий параметр для блокування під час обробки запиту
 
   @Output() answerSubmit = new EventEmitter<any>();
   @Output() close = new EventEmitter<void>();
@@ -104,7 +106,8 @@ export class QuestionComponent implements OnInit, OnChanges, OnDestroy {
 
   // Обробник відправки форми
   onSubmit(): void {
-    if (this.answerForm.invalid || this.answeredAlready) {
+    // Додаємо перевірку на isProcessing
+    if (this.answerForm.invalid || this.answeredAlready || this.isProcessing) {
       return;
     }
 
@@ -131,7 +134,7 @@ export class QuestionComponent implements OnInit, OnChanges, OnDestroy {
 
   // Перевіряємо, чи поточний користувач має відповідати на питання
   canAnswer(): boolean {
-    return this.isActivePlayer || this.isContestedPlayer;
+    return (this.isActivePlayer || this.isContestedPlayer) && !this.isProcessing;
   }
 
   // Отримуємо назву регіону для відображення

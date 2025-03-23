@@ -104,6 +104,9 @@
 
 <!-- Показуємо спінер під час завантаження -->
 <div class="loading-container" *ngIf="isLoading">
-  <nb-spinner status="primary" size="large"></nb-spinner>
-  <p class="loading-text">Завантаження...</p>
+  <nb-spinner
+    status="primary"
+    size="large"
+    message="Завантаження..."
+  ></nb-spinner>
 </div>
