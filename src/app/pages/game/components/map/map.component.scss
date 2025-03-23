@@ -4,77 +4,77 @@
   height: 100%;
   border-radius: 8px;
   overflow: hidden;
-}
-
-.map-container {
-  width: 100%;
-  height: 100%;
-  background-color: #e6f2ff; // Світло-блакитний фон для води
-}
-
-// Стилі для оверлеїв
-.map-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  pointer-events: none; // Дозволяємо клікати через оверлей
-
-  .overlay-content {
-    background-color: rgba(255, 255, 255, 0.8);
-    border-radius: 8px;
-    padding: 12px 20px;
-    display: flex;
-    align-items: center;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-
-    nb-icon {
-      margin-right: 8px;
-      font-size: 24px;
-    }
-
-    span {
-      font-size: 16px;
-      font-weight: bold;
-    }
-  }
+  flex-direction: column;
 }
 
-// Різні кольори для різних типів оверлеїв
-.planning-overlay {
-  .overlay-content {
-    border-left: 4px solid #2196f3; // Синій
+.notifications-container {
+  width: 100%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+}
+
+.map-notification {
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin: 8px 0;
+
+  nb-icon {
+    margin-right: 8px;
+    font-size: 20px;
+  }
+
+  span {
+    font-size: 14px;
+    font-weight: bold;
+  }
+
+  // Синій для планування
+  &:has(nb-icon[icon="map-outline"]) {
+    border-left: 4px solid #2196f3;
 
     nb-icon {
       color: #2196f3;
     }
   }
-}
 
-.post-planning-overlay {
-  .overlay-content {
-    border-left: 4px solid #ff9800; // Оранжевий
+  // Оранжевий для пост-планування
+  &:has(nb-icon[icon="pin-outline"]) {
+    border-left: 4px solid #ff9800;
 
     nb-icon {
       color: #ff9800;
     }
   }
-}
 
-.result-overlay {
-  .overlay-content {
-    border-left: 4px solid #4caf50; // Зелений для успіху
+  // Зелений/червоний для результату
+  &:has(nb-icon[icon="checkmark-circle-outline"]) {
+    border-left: 4px solid #4caf50;
 
     nb-icon {
       color: #4caf50;
-
-      &[icon="close-circle-outline"] {
-        color: #f44336; // Червоний для пропущеного ходу
-      }
     }
   }
+
+  &:has(nb-icon[icon="close-circle-outline"]) {
+    border-left: 4px solid #f44336;
+
+    nb-icon {
+      color: #f44336;
+    }
+  }
+}
+
+.map-container {
+  flex: 1;
+  width: 100%;
+  background-color: #e6f2ff; // Світло-блакитний фон для води
 }

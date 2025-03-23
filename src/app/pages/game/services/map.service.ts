@@ -26,12 +26,12 @@ export class MapService {
 
     constructor(private zone: NgZone, private firestore: Firestore) { }
 
-    /**
-     * Ініціалізує карту з даними GeoJSON та статусами регіонів
-     */
+
+
+    // Функція ініціалізації карти
     initMap(geoJson: any, mapStatus: any): void {
         this.zone.runOutsideAngular(() => {
-            console.log('rebuild')
+            console.log('rebuild');
             this.currentMapStatus = mapStatus;
             this.originalGeoJson = geoJson;
 
@@ -82,22 +82,26 @@ export class MapService {
                     });
                 })
                 .on('mouseover', (event: any, d: any) => {
-                    d3.select(event.currentTarget)
-                        .attr('stroke-width', 2)
-                        .attr('stroke', '#333');
+                    const hoverElement = d3.select(event.currentTarget);
+
+                    // Застосовуємо затемнення, зберігаючи такий самий border
+                    hoverElement
+                        .attr('fill-opacity', 0.7); // Зменшуємо opacity для ефекту затемнення
                 })
                 .on('mouseout', (event: any, d: any) => {
-                    d3.select(event.currentTarget)
-                        .attr('stroke-width', 0.5)
-                        .attr('stroke', '#fff');
+                    const element = d3.select(event.currentTarget);
+
+                    // Відновлюємо нормальну непрозорість без зміни границі
+                    element
+                        .attr('fill-opacity', 1); // Повертаємо повну непрозорість
                 });
 
             // Зберігаємо посилання на регіони для швидкого доступу
             geoJson.features.forEach((feature: any) => {
-                const regionName = feature.properties["iso3166-2"];
-                this.regions[regionName] = this.map.select(`#region-${regionName}`);
+                const regionId = feature.properties["iso3166-2"];
+                this.regions[regionId] = this.map.select(`#region-${regionId}`);
             });
-
+            console.log(geoJson);
             // Додаємо назви регіонів
             this.map.selectAll('text')
                 .data(geoJson.features)
@@ -105,14 +109,31 @@ export class MapService {
                 .append('text')
                 .attr('x', (d: any) => this.path.centroid(d)[0])
                 .attr('y', (d: any) => this.path.centroid(d)[1])
+                .attr('pointer-events', 'none')
                 .attr('text-anchor', 'middle')
                 .attr('font-size', '8px')
                 .attr('fill', '#333')
-                .text((d: any) => this.getRegionLabel(d.properties["iso3166-2"]));
-
+                .text((d: any) => this.getRegionLabel(d.properties["name"]));
         });
     }
 
+    // Функція виділення регіону
+    highlightRegion(regionName: string, highlight: boolean = true): void {
+        this.zone.runOutsideAngular(() => {
+            const region = this.regions[regionName];
+            if (region) {
+                if (highlight) {
+                    // Застосовуємо затемнення для виділення регіону без зміни границі
+                    region
+                        .attr('fill-opacity', 0.7);
+                } else {
+                    // Повертаємо нормальний стан без зміни границі
+                    region
+                        .attr('fill-opacity', 1);
+                }
+            }
+        });
+    }
     /**
      * Оновлює статус регіонів на карті
      */
@@ -127,26 +148,6 @@ export class MapService {
                     region.attr('fill', this.getRegionColor(regionName));
                 }
             });
-        });
-    }
-
-    /**
-     * Виділяє регіон на карті
-     */
-    highlightRegion(regionName: string, highlight: boolean = true): void {
-        this.zone.runOutsideAngular(() => {
-            const region = this.regions[regionName];
-            if (region) {
-                if (highlight) {
-                    region
-                        .attr('stroke-width', 2)
-                        .attr('stroke', '#000');
-                } else {
-                    region
-                        .attr('stroke-width', 0.5)
-                        .attr('stroke', '#fff');
-                }
-            }
         });
     }
 
@@ -176,7 +177,7 @@ export class MapService {
      */
     private getRegionLabel(fullName: string): string {
         // Скорочуємо "область" до "обл." для кращого відображення на карті
-        return fullName.replace(' область', ' обл.');
+        return fullName.replace(' область', '');
     }
 
     /**
