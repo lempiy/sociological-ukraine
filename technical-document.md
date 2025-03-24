@@ -1390,7 +1390,7 @@ async function handlePlanningTimeout(gameId, gameData, updateData) {
   }
 
   // Створюємо нову фазу
-  const newPhaseObj = newPhase(moves[0], currentPhase);
+  const newPhaseObj = newPhase(moves.find((m) => m.id === currentPhase.id + 1), currentPhase);
   updateData.currentPhase = newPhaseObj;
   updateData.currentRound = newPhaseObj.round;
 
@@ -1614,7 +1614,7 @@ async function handlePostAnswerTimeout(gameData, updateData) {
   }
 
   // Створюємо нову фазу
-  const newPhaseObj = newPhase(moves[0], gameData.currentPhase);
+  const newPhaseObj = newPhase(moves.find((m) => m.id === gameData.currentPhase.id + 1), gameData.currentPhase);
   updateData.currentPhase = newPhaseObj;
   updateData.currentRound = newPhaseObj.round;
 

@@ -30,11 +30,14 @@
       <!-- Варіанти відповідей -->
       <div *ngIf="question.type === 'variant'" class="variants-container">
         <div *ngFor="let variant of question.variants" class="variant-item">
-          <nb-radio
-            [value]="variant.id"
-            formControlName="variant"
-            [disabled]="!canAnswer() || answeredAlready || isProcessing"
-          >
+          <label class="custom-radio">
+            <input
+              type="radio"
+              [value]="variant.id"
+              formControlName="variant"
+              [disabled]="!canAnswer() || answeredAlready"
+            />
+            <span class="radio-checkmark"></span>
             <div class="variant-content">
               {{ variant.text }}
               <img
@@ -44,7 +47,7 @@
                 class="variant-image"
               />
             </div>
-          </nb-radio>
+          </label>
         </div>
       </div>
 

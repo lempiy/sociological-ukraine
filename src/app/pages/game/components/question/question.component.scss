@@ -188,3 +188,82 @@
     }
   }
 }
+
+/* Додайте ці стилі до кінця вашого CSS файлу */
+.custom-radio {
+  display: flex;
+  position: relative;
+  padding: 10px;
+  padding-left: 35px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  width: 100%;
+  user-select: none;
+
+  input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+
+    &:checked ~ .radio-checkmark {
+      background-color: #3366ff; /* Колір Nebular primary */
+      border-color: #3366ff;
+    }
+
+    &:checked ~ .radio-checkmark:after {
+      display: block;
+    }
+
+    &:disabled ~ .radio-checkmark {
+      background-color: #f5f5f5;
+      border-color: #e0e0e0;
+      cursor: default;
+    }
+
+    &:disabled ~ .variant-content {
+      color: #a0a0a0;
+      cursor: default;
+    }
+  }
+
+  .radio-checkmark {
+    position: absolute;
+    top: 50%;
+    left: 10px;
+    transform: translateY(-50%);
+    height: 20px;
+    width: 20px;
+    background-color: white;
+    border: 2px solid #bdbdbd;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+
+    &:after {
+      content: "";
+      position: absolute;
+      display: none;
+      top: 5px;
+      left: 5px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: white;
+    }
+  }
+
+  &:hover input ~ .radio-checkmark {
+    background-color: #f5f5f5;
+  }
+
+  .variant-content {
+    width: 100%;
+  }
+}
+
+.variant-item {
+  &:hover {
+    background-color: #f9f9f9;
+  }
+}

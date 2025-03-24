@@ -39,6 +39,7 @@ exports.startGameInternal = async (gameId) => {
     const round = Math.floor(i / players.length) + 1;
 
     movesArray.push({
+      id: i + 1,
       playerId: players[playerIndex].id,
       round: round,
     });
@@ -226,10 +227,14 @@ exports.leaveGame = functions
           const remainingPlayers = updatedPlayers.length;
 
           if (remainingPlayers > 0) {
+            const lastMove = gameData.moves.length
+              ? gameData.moves[gameData.moves.length - 1]
+              : null;
             // Створення нової черги ходів з мінімум 1 ходом
             if (updatedMoves.length === 0) {
               updateData.moves = [
                 {
+                  id: lastMove ? lastMove.id + 1 : 1,
                   playerId: updatedPlayers[0].id,
                   round: gameData.currentRound,
                 },
@@ -238,7 +243,9 @@ exports.leaveGame = functions
 
             // Створення нової фази для наступного гравця
             const nextPhase = newPhase(
-              updateData.moves[0],
+              updateData.moves.find(
+                (m) => m.id == gameData.currentPhase.id + 1
+              ),
               gameData.currentPhase
             );
 

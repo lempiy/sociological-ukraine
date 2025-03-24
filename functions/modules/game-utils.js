@@ -12,7 +12,7 @@ const { CLOUD_TASKS_CONFIG } = require("../constants");
  */
 exports.newPhase = (move, previousPhase) => {
   return {
-    id: previousPhase ? previousPhase.id + 1 : 0,
+    id: move.id,
     round: move.round,
     status: "planning",
     startAt: admin.firestore.FieldValue.serverTimestamp(),

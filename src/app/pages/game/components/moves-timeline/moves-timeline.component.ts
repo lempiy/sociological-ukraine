@@ -2,6 +2,7 @@ import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 interface Move {
+  id: number;
   playerId: string;
   round: number;
 }
@@ -11,6 +12,10 @@ interface Player {
   displayName: string;
   avatarUrl: string;
   color: string;
+}
+
+interface GamePhase {
+  id: number;
 }
 
 @Component({
@@ -23,6 +28,7 @@ interface Player {
 export class MovesTimelineComponent implements OnChanges {
   @Input() moves: Move[] = [];
   @Input() players: Player[] = [];
+  @Input() currentPhase: GamePhase | null = null;
 
   // Позиції ходів для відображення: 2 минулих, 1 поточний, 2 майбутніх
   displayedMoves: Array<{ move: Move; player: Player | null; isPast: boolean; isCurrent: boolean; isFuture: boolean }> = [];
@@ -40,26 +46,13 @@ export class MovesTimelineComponent implements OnChanges {
       return;
     }
 
-    // Знаходимо індекс поточного ходу (перший у списку)
-    const currentMoveIndex = 0;
-
-    // Визначаємо діапазон ходів для відображення
-    const startIndex = Math.max(0, currentMoveIndex - 2);
-    const endIndex = Math.min(this.moves.length - 1, currentMoveIndex + 2);
-
-    // Заповнюємо масив displayedMoves
-    for (let i = startIndex; i <= endIndex; i++) {
-      const move = this.moves[i];
-      const player = this.players.find(p => p.id === move.playerId) || null;
-
-      this.displayedMoves.push({
-        move,
-        player,
-        isPast: i < currentMoveIndex,
-        isCurrent: i === currentMoveIndex,
-        isFuture: i > currentMoveIndex
-      });
-    }
+    this.displayedMoves = this.moves.map((move) => ({
+      move,
+      player: this.players.find(p => p.id === move.playerId) || null,
+      isPast: !!(this.currentPhase && move.id < this.currentPhase?.id),
+      isCurrent: !!(this.currentPhase && move.id === this.currentPhase?.id),
+      isFuture: this.currentPhase ? move.id > this.currentPhase?.id : true,
+    }))
   }
 
   // Допоміжний метод для отримання типу ходу для класів CSS

@@ -127,6 +127,7 @@ async function handlePlanningTimeout(gameId, gameData, updateData) {
   }
 
   moves.push({
+    id: lastMove.id + 1,
     playerId: nextPlayerId,
     round: nextRound,
   });
@@ -139,7 +140,10 @@ async function handlePlanningTimeout(gameId, gameData, updateData) {
   }
 
   // Створюємо нову фазу
-  const newPhaseObj = newPhase(moves[0], currentPhase);
+  const newPhaseObj = newPhase(
+    moves.find((m) => m.id === currentPhase.id + 1),
+    currentPhase
+  );
   updateData.currentPhase = newPhaseObj;
   updateData.currentRound = newPhaseObj.round;
 
@@ -378,8 +382,18 @@ async function handlePostAnswerTimeout(gameId, gameData, updateData) {
   if (nextPlayerIndex === 0) {
     nextRound++; // Новий раунд, якщо ходить перший гравець
   }
+  console.log(
+    "moves before",
+    gameData.moves.map((m) => ({
+      id: m.id,
+      round: m.round,
+      name: gameData.players.find((player) => player.id === m.playerId)
+        .displayName,
+    }))
+  );
 
   moves.push({
+    id: lastMove.id + 1,
     playerId: nextPlayerId,
     round: nextRound,
   });
@@ -390,9 +404,20 @@ async function handlePostAnswerTimeout(gameId, gameData, updateData) {
   if (await checkAndHandleGameEnd(gameId, gameData, updateData, nextRound)) {
     return; // Гра завершена
   }
-
+  console.log(
+    "moves after",
+    updateData.moves.map((m) => ({
+      id: m.id,
+      round: m.round,
+      name: gameData.players.find((player) => player.id === m.playerId)
+        .displayName,
+    }))
+  );
   // Створюємо нову фазу
-  const newPhaseObj = newPhase(moves[0], gameData.currentPhase);
+  const newPhaseObj = newPhase(
+    moves.find((m) => m.id === gameData.currentPhase.id + 1),
+    gameData.currentPhase
+  );
   updateData.currentPhase = newPhaseObj;
   updateData.currentRound = newPhaseObj.round;
 

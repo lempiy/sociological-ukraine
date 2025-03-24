@@ -118,6 +118,7 @@ export class GameService {
         (docSnapshot) => {
           if (docSnapshot.exists()) {
             const gameData = docSnapshot.data() as Game;
+            console.log('gameUpdate', gameData);
             observer.next(gameData);
           } else {
             observer.error(new Error('Game not found'));

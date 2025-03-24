@@ -1,8 +1,16 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { interval, Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
-import { NbButtonModule, NbIconModule, NbProgressBarModule, NbRadioModule, NbFormFieldModule, NbInputModule, NbSpinnerModule } from '@nebular/theme';
+import {
+  NbButtonModule,
+  NbIconModule,
+  NbProgressBarModule,
+  NbRadioModule,
+  NbFormFieldModule,
+  NbInputModule,
+  NbSpinnerModule
+} from '@nebular/theme';
 
 @Component({
   selector: 'app-question',
@@ -12,13 +20,14 @@ import { NbButtonModule, NbIconModule, NbProgressBarModule, NbRadioModule, NbFor
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    FormsModule,
     NbButtonModule,
     NbIconModule,
     NbProgressBarModule,
     NbRadioModule,
-    NbFormFieldModule,
     NbInputModule,
-    NbSpinnerModule
+    NbSpinnerModule,
+    NbFormFieldModule
   ]
 })
 export class QuestionComponent implements OnInit, OnChanges, OnDestroy {
