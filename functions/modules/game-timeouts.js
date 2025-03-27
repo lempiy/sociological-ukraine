@@ -1,5 +1,6 @@
 // functions/modules/game-timeouts.js
 const admin = require("firebase-admin");
+const { FieldValue } = require("firebase-admin/firestore");
 const functions = require("firebase-functions/v1");
 const { GAME_STATUS, PHASE_STATUS, QUESTION_TYPE } = require("../constants");
 const {
@@ -46,7 +47,7 @@ exports.gameCurrentPhaseTimeout = functions
 
       // Обробка різних статусів фази
       let updateData = {
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       };
 
       switch (gameData.currentPhase.status) {
@@ -274,7 +275,7 @@ async function handlePostPlanningTimeout(gameId, gameData, updateData) {
     question: question,
     activePlayerAnswer: null,
     contestedPlayerAnswer: null,
-    startAt: admin.firestore.FieldValue.serverTimestamp(),
+    startAt: FieldValue.serverTimestamp(),
   };
 
   // Плануємо таймаут для фази answer
@@ -339,7 +340,7 @@ async function handleAnswerTimeout(gameId, gameData, updateData) {
   updateData.currentPhase = {
     ...gameData.currentPhase,
     status: PHASE_STATUS.POST_ANSWER,
-    startAt: admin.firestore.FieldValue.serverTimestamp(),
+    startAt: FieldValue.serverTimestamp(),
   };
 
   // Плануємо таймаут для фази post-answer

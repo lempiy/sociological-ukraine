@@ -1,5 +1,5 @@
 import { Observable } from 'rxjs';
-import { map, take } from 'rxjs/operators';
+import { map, take, skip, skipWhile, skipUntil, tap, switchMap } from 'rxjs/operators';
 import { AuthService } from '../services/auth.service';
 import { Injectable } from '@angular/core';
 import { CanActivate, Router, UrlTree } from '@angular/router';
@@ -16,6 +16,9 @@ export class AuthGuard implements CanActivate {
 
   canActivate(): Observable<boolean | UrlTree> {
     return this.authService.user$.pipe(
+      switchMap((v) => this.authService.authStateReady$.pipe(
+        map(_ => v),
+      )),
       take(1),
       map(user => {
         const isAuthenticated = !!user;

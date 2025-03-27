@@ -1,5 +1,6 @@
 // functions/modules/game-creation.js
 const admin = require("firebase-admin");
+const { FieldValue } = require("firebase-admin/firestore");
 const functions = require("firebase-functions/v1");
 const { PLAYER_COLORS, GAME_STATUS } = require("../constants");
 const { startGameInternal } = require("./game-operations");
@@ -83,7 +84,7 @@ exports.createGame = functions
         name: gameName,
         map: {
           id: "ukraine",
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
           status: mapStatus,
         },
         players: [
@@ -111,8 +112,8 @@ exports.createGame = functions
         phases: [],
         joinCode: joinCode,
         planningSkippedCount: 0, // Лічильник пропущених ходів
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
       };
 
       // Збереження гри в Firestore
@@ -229,8 +230,8 @@ exports.joinGame = functions
         .collection("games")
         .doc(gameId)
         .update({
-          players: admin.firestore.FieldValue.arrayUnion(newPlayer),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          players: FieldValue.arrayUnion(newPlayer),
+          updatedAt: FieldValue.serverTimestamp(),
         });
 
       // Перевірка, чи досягнуто максимальної кількості гравців

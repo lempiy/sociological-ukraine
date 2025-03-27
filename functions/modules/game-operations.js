@@ -1,5 +1,6 @@
 // functions/modules/game-operations.js
 const admin = require("firebase-admin");
+const { FieldValue } = require("firebase-admin/firestore");
 const functions = require("firebase-functions/v1");
 const { GAME_STATUS } = require("../constants");
 const {
@@ -34,7 +35,7 @@ exports.startGameInternal = async (gameId) => {
   const movesArray = [];
 
   // Додаємо перші 3 ходи (або менше, якщо гравців менше 3)
-  for (let i = 0; i < Math.min(3, players.length); i++) {
+  for (let i = 0; i < 3; i++) {
     const playerIndex = i % players.length;
     const round = Math.floor(i / players.length) + 1;
 
@@ -63,7 +64,7 @@ exports.startGameInternal = async (gameId) => {
     currentPhase: currentPhase,
     status: GAME_STATUS.RUNNING,
     currentRound: 1,
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
   };
 
   // Зберігаємо оновлені дані
@@ -176,7 +177,7 @@ exports.leaveGame = functions
       // Оновлення даних гри залежно від статусу
       const updateData = {
         players: updatedPlayers,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       };
 
       if (gameData.status === GAME_STATUS.RUNNING) {

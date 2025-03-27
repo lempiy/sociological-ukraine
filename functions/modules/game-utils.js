@@ -1,6 +1,6 @@
 // functions/modules/game-utils.js
 const admin = require("firebase-admin");
-const functions = require("firebase-functions/v1");
+const { FieldValue } = require("firebase-admin/firestore");
 const { CloudTasksClient } = require("@google-cloud/tasks");
 const { CLOUD_TASKS_CONFIG } = require("../constants");
 
@@ -15,7 +15,7 @@ exports.newPhase = (move, previousPhase) => {
     id: move.id,
     round: move.round,
     status: "planning",
-    startAt: admin.firestore.FieldValue.serverTimestamp(),
+    startAt: FieldValue.serverTimestamp(),
     activePlayerId: move.playerId,
     activePlayerAnswer: null,
     regionId: "",
@@ -208,6 +208,14 @@ exports.checkAndHandleGameEnd = async (
  * @returns {string} - ID завдання Cloud Tasks
  */
 exports.schedulePhaseTimeout = async (gameId, delaySeconds) => {
+  if (process.env.FUNCTIONS_EMULATOR) {
+    return schedulePhaseTimeoutEmulator(gameId, delaySeconds);
+  } else {
+    return schedulePhaseTimeoutCloud(gameId, delaySeconds);
+  }
+};
+
+async function schedulePhaseTimeoutCloud(gameId, delaySeconds) {
   // Налаштування Cloud Tasks
   const project = process.env.GCLOUD_PROJECT;
   const location = CLOUD_TASKS_CONFIG.LOCATION;
@@ -247,13 +255,95 @@ exports.schedulePhaseTimeout = async (gameId, delaySeconds) => {
   });
 
   return taskId;
-};
+}
+
+async function schedulePhaseTimeoutEmulator(gameId, delaySeconds) {
+  // Створюємо унікальний ID завдання
+  const taskId = `game-${gameId}-timeout-${Date.now()}`;
+  // Використовуємо setTimeout для емуляції
+  setTimeout(async () => {
+    try {
+      const to = await admin
+        .firestore()
+        .collection("emulator-timers")
+        .doc(taskId)
+        .get();
+      if (!to.exists) return;
+      console.log(
+        `[Емулятор] >> Спрацював таймаут ${taskId} для гри ${gameId}`
+      );
+
+      // Отримання даних гри
+      const gameDoc = await admin
+        .firestore()
+        .collection("games")
+        .doc(gameId)
+        .get();
+
+      if (!gameDoc.exists) {
+        console.error(`Гру ${gameId} не знайдено`);
+        return;
+      }
+
+      const gameData = gameDoc.data();
+
+      // Перевірка, чи не завершена гра
+      if (gameData.status !== "running") {
+        console.log(`Гра ${gameId} не активна, пропускаємо таймаут`);
+        return;
+      }
+
+      // Створюємо фейковий об'єкт запиту і відповіді
+      const mockReq = { body: { gameId } };
+      const mockRes = {
+        status: (code) => ({
+          send: (data) => {
+            console.log(
+              `[Емулятор] Відповідь на таймаут: ${code}, ${JSON.stringify(
+                data
+              )}`
+            );
+          },
+        }),
+      };
+
+      // Отримуємо доступ до функції gameCurrentPhaseTimeout
+      const gameTimeouts = require("./game-timeouts");
+
+      // Викликаємо обробник таймауту
+      await gameTimeouts.gameCurrentPhaseTimeout(mockReq, mockRes);
+    } catch (error) {
+      console.error(
+        `[Емулятор] Помилка при виконанні таймауту ${taskId}:`,
+        error
+      );
+    }
+  }, delaySeconds * 1000);
+
+  await admin.firestore().collection("emulator-timers").doc(taskId).set({
+    id: "",
+  });
+
+  console.log(
+    `[Емулятор] > Запланували таймаут ${taskId} для гри ${gameId} через ${delaySeconds} секунд`
+  );
+
+  return taskId;
+}
 
 /**
  * Скасування завдання таймауту
  * @param {string} taskId - ID завдання для скасування
  */
 exports.cancelTimeoutTask = async (taskId) => {
+  if (process.env.FUNCTIONS_EMULATOR) {
+    return cancelTimeoutTaskEmulator(taskId);
+  } else {
+    return cancelTimeoutTaskCloud(taskId);
+  }
+};
+
+async function cancelTimeoutTaskCloud(taskId) {
   const project = process.env.GCLOUD_PROJECT;
   const location = CLOUD_TASKS_CONFIG.LOCATION;
   const queue = CLOUD_TASKS_CONFIG.QUEUE;
@@ -264,4 +354,13 @@ exports.cancelTimeoutTask = async (taskId) => {
   await tasksClient.deleteTask({
     name: taskPath,
   });
-};
+}
+
+async function cancelTimeoutTaskEmulator(taskId) {
+  const to = await admin
+    .firestore()
+    .collection("emulator-timers")
+    .doc(taskId)
+    .delete();
+  console.log(`[Емулятор] X Таймаут ${taskId} скасовано`);
+}

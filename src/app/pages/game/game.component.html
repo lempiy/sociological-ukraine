@@ -18,22 +18,49 @@
   <!-- Основний вміст гри -->
   <div *ngIf="!loading && !error && gameData" class="game-content">
     <!-- Лідерборд гравців -->
-    <app-leaderboard
-      [players]="gameData.players"
-      [mapStatus]="gameData.map.status"
-      [currentUserId]="userData.id"
-    ></app-leaderboard>
+    <div class="app-leaderboard-holder">
+      <app-leaderboard
+        [players]="gameData.players"
+        [mapStatus]="gameData.map.status"
+        [currentUserId]="userData.id"
+      ></app-leaderboard>
+    </div>
 
-    <!-- Таймер планування (видимий під час фази планування) -->
-    <app-round-timer
-      *ngIf="
-        gameData.currentPhase.status === 'planning' ||
-        gameData.currentPhase.status === 'answer'
-      "
-      [phase]="gameData.currentPhase"
-      [rules]="gameData.rules"
-    ></app-round-timer>
-
+    <div class="app-round-timer-holder">
+      <!-- Таймер планування (видимий під час фази планування) -->
+      <app-round-timer
+        *ngIf="
+          gameData.currentPhase.status === 'planning' ||
+          gameData.currentPhase.status === 'answer'
+        "
+        [phase]="gameData.currentPhase"
+        [rules]="gameData.rules"
+      ></app-round-timer>
+      <div
+        class="game-hint"
+        *ngIf="gameData.currentPhase.status === 'post-planning'"
+      >
+        <div *ngIf="gameData.currentPhase.contestedPlayerId; else other">
+          Гравці
+          {{ getPlayer(gameData.currentPhase.activePlayerId)?.displayName }} та
+          {{ getPlayer(gameData.currentPhase.contestedPlayerId)?.displayName }}
+          готуються до дуелі
+        </div>
+        <ng-template #other>
+          <div r>
+            Гравець
+            {{ getPlayer(gameData.currentPhase.activePlayerId)?.displayName }}
+            готується до відповіді
+          </div>
+        </ng-template>
+      </div>
+      <div
+        class="game-hint"
+        *ngIf="gameData.currentPhase.status === 'post-answer'"
+      >
+        <div>Скоро почнеться новий раунд</div>
+      </div>
+    </div>
     <!-- Інтерактивна карта України -->
     <app-map
       *ngIf="mapData"
@@ -43,6 +70,7 @@
       [currentPhase]="gameData.currentPhase"
       [isProcessing]="isProcessingAction"
       (regionSelect)="onRegionSelect($event)"
+      [players]="gameData.players"
     ></app-map>
 
     <!-- Інформація про раунд -->

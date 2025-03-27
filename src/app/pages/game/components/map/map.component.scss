@@ -14,7 +14,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 40px;
+  min-height: 54px;
+  margin-bottom: 12px;
 }
 
 .map-notification {
@@ -76,5 +77,6 @@
 .map-container {
   flex: 1;
   width: 100%;
+  min-height: 300px;
   background-color: #e6f2ff; // Світло-блакитний фон для води
 }

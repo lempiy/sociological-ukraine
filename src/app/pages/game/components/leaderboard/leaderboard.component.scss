@@ -36,6 +36,9 @@
 
   .avatar-container {
     margin-right: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .player-avatar {

@@ -3,6 +3,12 @@ import { Observable, Subject } from 'rxjs';
 import * as d3 from 'd3';
 import { doc, Firestore, onSnapshot } from '@angular/fire/firestore';
 
+
+interface PlayerColor {
+    id: string;
+    color: string;
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -16,7 +22,7 @@ export class MapService {
     private regions: any = {};
     private currentMapStatus: any = {};
     private originalGeoJson: d3.ExtendedFeature | d3.ExtendedFeatureCollection | d3.GeoGeometryObjects | d3.ExtendedGeometryCollection | null = null;
-
+    private playerColors: PlayerColor[] = [];
     // Подія вибору регіону
     private regionSelectSubject = new Subject<string>();
     public regionSelect$ = this.regionSelectSubject.asObservable();
@@ -29,11 +35,12 @@ export class MapService {
 
 
     // Функція ініціалізації карти
-    initMap(geoJson: any, mapStatus: any): void {
+    initMap(geoJson: any, mapStatus: any, playerColors: PlayerColor[]): void {
         this.zone.runOutsideAngular(() => {
             console.log('rebuild');
             this.currentMapStatus = mapStatus;
             this.originalGeoJson = geoJson;
+            this.playerColors = playerColors;
 
             // Очищаємо попередню карту, якщо вона існує
             d3.select('#map-container').selectAll('*').remove();
@@ -144,8 +151,10 @@ export class MapService {
             // Оновлюємо кольори для всіх регіонів
             Object.keys(this.regions).forEach(regionName => {
                 const region = this.regions[regionName];
+
                 if (region) {
                     region.attr('fill', this.getRegionColor(regionName));
+                    region.attr('fill-opacity', 1)
                 }
             });
         });
@@ -169,7 +178,7 @@ export class MapService {
         }
 
         // Повертаємо колір гравця з властивості map.status
-        return playerId;
+        return this.playerColors.find((p) => p.id == playerId)?.color || this.NEUTRAL_COLOR;
     }
 
     /**
@@ -214,7 +223,7 @@ export class MapService {
 
         // Отримуємо нові розміри контейнера
         this.width = container.clientWidth;
-        this.height = container.clientHeight || 500;
+        this.height = container.clientHeight || 300;
 
         // Оновлюємо розміри SVG
         this.svg

@@ -40,6 +40,7 @@ export class RoundTimerComponent implements OnChanges, OnDestroy {
       return; // Для інших фаз не показуємо таймер
     }
 
+
     // Розраховуємо час початку фази в мілісекундах
     const startTime = this.phase.startAt ? this.phase.startAt.toMillis() : Date.now();
 

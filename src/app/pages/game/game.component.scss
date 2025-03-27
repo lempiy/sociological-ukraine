@@ -38,16 +38,35 @@
   flex-direction: column;
   height: 100%;
   width: 100%;
-  padding: 16px;
+  padding: 5px;
 
   // Лідерборд займає верхню частину
-  app-leaderboard {
+  .app-leaderboard-holder {
+    min-height: 70px;
+    width: 100%;
     margin-bottom: 12px;
   }
 
-  // Таймер розміщений під лідербордом
-  app-round-timer {
+  .app-round-timer-holder {
+    min-height: 70px;
+    width: 100%;
     margin-bottom: 12px;
+  }
+
+  .game-hint {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    height: 100%;
+    line-height: 100%;
+    vertical-align: middle;
+    div {
+      display: block;
+    }
   }
 
   // Карта займає основну частину екрану

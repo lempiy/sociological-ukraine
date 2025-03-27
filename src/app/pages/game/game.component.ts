@@ -19,6 +19,14 @@ import { RoundTimerComponent } from './components/round-timer/round-timer.compon
 import { MovesTimelineComponent } from './components/moves-timeline/moves-timeline.component';
 import { QuestionComponent } from './components/question/question.component';
 
+
+interface Player {
+  id: string;
+  displayName: string;
+  color: string;
+}
+
+
 @Component({
   selector: 'app-game',
   templateUrl: './game.component.html',
@@ -84,6 +92,7 @@ export class GameComponent implements OnInit, OnDestroy {
     this.authService.user$.subscribe((user: any) => {
       if (!user) {
         // Якщо користувач не авторизований, перенаправляємо на головну сторінку
+        console.warn('unauthorized', user);
         this.router.navigate(['/']);
         return;
       }
@@ -127,6 +136,10 @@ export class GameComponent implements OnInit, OnDestroy {
           }
         );
     });
+  }
+
+  getPlayer(playerId: string): Player {
+    return this.gameData.players.find((p: Player) => p.id == playerId)
   }
 
   loadMapData(mapId: string): void {
@@ -287,3 +300,4 @@ export class GameComponent implements OnInit, OnDestroy {
     }
   }
 }
+

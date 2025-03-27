@@ -5,14 +5,15 @@ const admin = require("firebase-admin");
 // Ініціалізація Firebase Admin
 admin.initializeApp();
 
-const regionFunctions = functions.region("europe-west1");
+if (process.env.FUNCTIONS_EMULATOR) {
+  console.log("Running in emulator mode");
+}
 
 // Імпорт модулів з окремих файлів
 const gameCreationModule = require("./modules/game-creation");
 const gameOperationsModule = require("./modules/game-operations");
 const gameAnswersModule = require("./modules/game-answers");
 const gameTimeoutsModule = require("./modules/game-timeouts");
-const gameUtilsModule = require("./modules/game-utils");
 
 // Експорт всіх Cloud Functions
 

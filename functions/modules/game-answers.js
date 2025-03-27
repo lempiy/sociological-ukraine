@@ -1,5 +1,6 @@
 // functions/modules/game-answers.js
 const admin = require("firebase-admin");
+const { FieldValue } = require("firebase-admin/firestore");
 const functions = require("firebase-functions/v1");
 const { GAME_STATUS, PHASE_STATUS, QUESTION_TYPE } = require("../constants");
 const {
@@ -101,7 +102,7 @@ exports.setPlanningResult = functions
         regionId: regionId,
         contestedPlayerId: contestedPlayerId,
         status: PHASE_STATUS.POST_PLANNING,
-        startAt: admin.firestore.FieldValue.serverTimestamp(),
+        startAt: FieldValue.serverTimestamp(),
       };
 
       // Якщо є попередня таска таймауту, скасовуємо її
@@ -124,7 +125,7 @@ exports.setPlanningResult = functions
       // Оновлення документа гри
       await admin.firestore().collection("games").doc(gameId).update({
         currentPhase: updatedPhase,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       });
 
       return { success: true };
@@ -273,7 +274,7 @@ exports.setAnswer = functions
       // Оновлення документа гри
       await admin.firestore().collection("games").doc(gameId).update({
         currentPhase: updatedPhase,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       });
 
       // Якщо всі гравці відповіли, відміняємо таймаут і запускаємо обробку відповідей
@@ -290,7 +291,7 @@ exports.setAnswer = functions
 
         // Викликаємо логіку обробки відповідей самостійно
         const updateData = {
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
         };
 
         // Перевіряємо переможця
@@ -309,7 +310,7 @@ exports.setAnswer = functions
         updateData.currentPhase = {
           ...updatedPhase,
           status: PHASE_STATUS.POST_ANSWER,
-          startAt: admin.firestore.FieldValue.serverTimestamp(),
+          startAt: FieldValue.serverTimestamp(),
         };
 
         // Плануємо таймаут для фази post-answer

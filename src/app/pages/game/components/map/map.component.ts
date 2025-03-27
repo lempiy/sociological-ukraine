@@ -4,6 +4,12 @@ import { MapService } from '../../services/map.service';
 import { CommonModule } from '@angular/common';
 import { NbIconModule } from '@nebular/theme';
 
+interface Player {
+  id: string;
+  color: string;
+  displayName: string;
+}
+
 @Component({
   selector: 'app-map',
   templateUrl: './map.component.html',
@@ -17,6 +23,7 @@ export class MapComponent implements OnInit, OnChanges, OnDestroy, AfterViewInit
   @Input() currentUserId: string = '';
   @Input() currentPhase: any = {};
   @Input() isProcessing: boolean = false; // Новий параметр для блокування під час обробки запиту
+  @Input() players: Player[] = [];
 
   @ViewChild('map')
   map!: ElementRef<HTMLDivElement>;
@@ -40,7 +47,7 @@ export class MapComponent implements OnInit, OnChanges, OnDestroy, AfterViewInit
   ngAfterViewInit() {
     // Доступ до нативного елемента
     setTimeout(() => {
-      this.mapService.initMap(this.mapData, this.mapStatus);
+      this.mapService.initMap(this.mapData, this.mapStatus, this.players);
     })
   }
 

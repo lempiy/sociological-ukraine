@@ -188,6 +188,7 @@
    ```javascript
    // scripts/import-data.js
    const admin = require("firebase-admin");
+   const { FieldValue } = require("firebase-admin/firestore");
    const fs = require("fs");
    const serviceAccount = require("./service-account-key.json");
 
@@ -206,7 +207,7 @@
        await db.collection("maps").doc("ukraine").set({
          id: "ukraine",
          geoJson: geoJsonString,
-         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+         updatedAt: FieldValue.serverTimestamp(),
        });
 
        console.log("GeoJSON карта успішно імпортована");
@@ -222,7 +223,7 @@
          const questionRef = db.collection("questions").doc();
          batch.set(questionRef, {
            ...question,
-           createdAt: admin.firestore.FieldValue.serverTimestamp(),
+           createdAt: FieldValue.serverTimestamp(),
          });
        });
 
@@ -796,7 +797,7 @@ exports.createGame = functions.region("europe-central2").https.onCall(async (dat
       name: gameName,
       map: {
         id: "ukraine",
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
         status: mapStatus,
       },
       players: [
@@ -822,8 +823,8 @@ exports.createGame = functions.region("europe-central2").https.onCall(async (dat
       currentPhase: null,
       phases: [],
       joinCode: joinCode,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
     };
 
     // Збереження гри в Firestore
@@ -972,7 +973,7 @@ exports.setAnswer = functions.region("europe-central2").https.onCall(async (data
     // Оновлення документа гри
     await admin.firestore().collection("games").doc(gameId).update({
       currentPhase: updatedPhase,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
 
     // Якщо всі гравці відповіли, відміняємо таймаут і запускаємо обробку відповідей
@@ -989,7 +990,7 @@ exports.setAnswer = functions.region("europe-central2").https.onCall(async (data
 
       // Викликаємо логіку обробки відповідей самостійно, симулюючи handleAnswerTimeout
       const updateData = {
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       };
 
       // Перевіряємо переможця
@@ -1008,7 +1009,7 @@ exports.setAnswer = functions.region("europe-central2").https.onCall(async (data
       updateData.currentPhase = {
         ...updatedPhase,
         status: "post-answer",
-        startAt: admin.firestore.FieldValue.serverTimestamp(),
+        startAt: FieldValue.serverTimestamp(),
       };
 
       // Плануємо таймаут для фази post-answer
@@ -1141,7 +1142,7 @@ exports.setPlanningResult = functions.region("europe-central2").https.onCall(asy
       regionId: regionId,
       contestedPlayerId: contestedPlayerId,
       status: "post-planning",
-      startAt: admin.firestore.FieldValue.serverTimestamp(),
+      startAt: FieldValue.serverTimestamp(),
     };
 
     // Якщо є попередня таска таймауту, скасовуємо її
@@ -1161,7 +1162,7 @@ exports.setPlanningResult = functions.region("europe-central2").https.onCall(asy
     // Оновлення документа гри
     await admin.firestore().collection("games").doc(gameId).update({
       currentPhase: updatedPhase,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
 
     return { success: true };
@@ -1294,7 +1295,7 @@ exports.gameCurrentPhaseTimeout = functions.region("europe-central2").https.onRe
 
     // Обробка різних статусів фази
     let updateData = {
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      updatedAt: FieldValue.serverTimestamp()
     };
 
     switch (gameData.currentPhase.status) {
@@ -1480,7 +1481,7 @@ async function handlePostPlanningTimeout(gameId, gameData, updateData) {
     ...gameData.currentPhase,
     status: 'answer',
     question: question,
-    startAt: admin.firestore.FieldValue.serverTimestamp()
+    startAt: FieldValue.serverTimestamp()
   };
 
   // Плануємо таймаут для фази answer
@@ -1518,7 +1519,7 @@ async function handlePostPlanningTimeout(gameId, gameData, updateData) {
     ...gameData.currentPhase,
     status: 'answer',
     question: question,
-    startAt: admin.firestore.FieldValue.serverTimestamp()
+    startAt: FieldValue.serverTimestamp()
   };
 
   // Плануємо таймаут для фази answer
@@ -1546,7 +1547,7 @@ async function handleAnswerTimeout(gameId, gameData, updateData) {
   updateData.currentPhase = {
     ...gameData.currentPhase,
     status: 'post-answer',
-    startAt: admin.firestore.FieldValue.serverTimestamp()
+    startAt: FieldValue.serverTimestamp()
   };
 
   // Плануємо таймаут для фази post-answer
@@ -1854,7 +1855,7 @@ exports.startGame = functions.region("europe-central2").https.onCall(async (data
       currentPhase: currentPhase,
       status: "running",
       currentRound: 1,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     };
 
     // Зберігаємо оновлені дані
@@ -1883,7 +1884,7 @@ function newPhase(move, previousPhase) {
     id: previousPhase ? previousPhase.id + 1 : 0,
     round: move.round,
     status: "planning",
-    startAt: admin.firestore.FieldValue.serverTimestamp(),
+    startAt: FieldValue.serverTimestamp(),
     activePlayerId: move.playerId,
     activePlayerAnswer: null,
     regionId: "",
@@ -2033,7 +2034,7 @@ exports.leaveGame = functions.region("europe-central2").https.onCall(async (data
     // Оновлення даних гри залежно від статусу
     const updateData = {
       players: updatedPlayers,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     };
 
     if (gameData.status === "running") {
@@ -2193,7 +2194,7 @@ exports.joinGame = functions.region("europe-central2").https.onCall(async (data,
       .doc(gameId)
       .update({
         players: admin.firestore.FieldValue.arrayUnion(newPlayer),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       });
 
     // Перевірка, чи досягнуто максимальної кількості гравців
