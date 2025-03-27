@@ -1,5 +1,5 @@
 <div class="game-container">
-  <!-- Екран завантаження -->
+  <!-- Loading screen -->
   <div *ngIf="loading" class="loading-container">
     <nb-spinner
       status="primary"
@@ -8,16 +8,16 @@
     ></nb-spinner>
   </div>
 
-  <!-- Повідомлення про помилку -->
+  <!-- Error message -->
   <div *ngIf="error" class="error-container">
     <h2>Помилка</h2>
     <p>{{ error }}</p>
     <button nbButton status="primary" routerLink="/">На головну</button>
   </div>
 
-  <!-- Основний вміст гри -->
+  <!-- Main game content -->
   <div *ngIf="!loading && !error && gameData" class="game-content">
-    <!-- Лідерборд гравців -->
+    <!-- Player leaderboard -->
     <div class="app-leaderboard-holder">
       <app-leaderboard
         [players]="gameData.players"
@@ -27,7 +27,7 @@
     </div>
 
     <div class="app-round-timer-holder">
-      <!-- Таймер планування (видимий під час фази планування) -->
+      <!-- Planning timer (visible during planning phase) -->
       <app-round-timer
         *ngIf="
           gameData.currentPhase.status === 'planning' ||
@@ -47,7 +47,7 @@
           готуються до дуелі
         </div>
         <ng-template #other>
-          <div r>
+          <div>
             Гравець
             {{ getPlayer(gameData.currentPhase.activePlayerId)?.displayName }}
             готується до відповіді
@@ -61,7 +61,7 @@
         <div>Скоро почнеться новий раунд</div>
       </div>
     </div>
-    <!-- Інтерактивна карта України -->
+    <!-- Interactive Ukraine map -->
     <app-map
       *ngIf="mapData"
       [mapData]="mapData"
@@ -73,21 +73,24 @@
       [players]="gameData.players"
     ></app-map>
 
-    <!-- Інформація про раунд -->
+    <!-- Round information -->
     <div class="round-info">
       <span>Раунд: {{ gameData.currentRound }}</span>
     </div>
 
-    <!-- Таймлайн ходів -->
+    <!-- Moves timeline -->
     <app-moves-timeline
       [moves]="gameData.moves"
       [players]="gameData.players"
       [currentPhase]="gameData.currentPhase"
     ></app-moves-timeline>
 
-    <!-- Вікно питання (видиме під час фази відповіді) -->
+    <!-- Question window (visible during answer or post-answer phase) -->
     <app-question
-      *ngIf="gameData.currentPhase.status === 'answer'"
+      *ngIf="
+        gameData.currentPhase.status === 'answer' ||
+        gameData.currentPhase.status === 'post-answer'
+      "
       [question]="gameData.currentPhase.question"
       [regionId]="gameData.currentPhase.regionId"
       [timeLeft]="gameData.rules.timeForAnswer"
@@ -95,10 +98,12 @@
       [isActivePlayer]="isActivePlayer()"
       [isContestedPlayer]="isContestedPlayer()"
       [isProcessing]="isProcessingAction"
+      [currentPhase]="gameData.currentPhase"
+      [players]="gameData.players"
       (answerSubmit)="onAnswer($event)"
     ></app-question>
 
-    <!-- Оверлей під час обробки дій -->
+    <!-- Processing overlay -->
     <div *ngIf="isProcessingAction" class="processing-overlay">
       <nb-spinner status="primary" message="Обробка дії..."></nb-spinner>
     </div>

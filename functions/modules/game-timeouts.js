@@ -11,13 +11,13 @@ const {
 } = require("./game-utils");
 
 /**
- * Обробляє таймаути фаз гри
+ * Handles game phase timeouts
  */
 exports.gameCurrentPhaseTimeout = functions
   .region("europe-central2")
   .https.onRequest(async (req, res) => {
     try {
-      // Парсимо тіло запиту
+      // Parse request body
       const { gameId } = req.body;
 
       if (!gameId) {
@@ -25,7 +25,7 @@ exports.gameCurrentPhaseTimeout = functions
         return;
       }
 
-      // Отримання даних гри
+      // Get game data
       const gameDoc = await admin
         .firestore()
         .collection("games")
@@ -39,13 +39,13 @@ exports.gameCurrentPhaseTimeout = functions
 
       const gameData = gameDoc.data();
 
-      // Перевірка, чи не завершена гра
+      // Check if game is not finished
       if (gameData.status !== GAME_STATUS.RUNNING) {
         res.status(200).send({ message: "Game is not running" });
         return;
       }
 
-      // Обробка різних статусів фази
+      // Process different phase statuses
       let updateData = {
         updatedAt: FieldValue.serverTimestamp(),
       };
@@ -80,40 +80,40 @@ exports.gameCurrentPhaseTimeout = functions
   });
 
 /**
- * Обробка таймауту фази "planning"
+ * Handles timeout of "planning" phase
  */
 async function handlePlanningTimeout(gameId, gameData, updateData) {
-  // Збільшення лічильника пропущених ходів
+  // Increase skipped moves counter
   const skippedCount = (gameData.planningSkippedCount || 0) + 1;
   updateData.planningSkippedCount = skippedCount;
 
-  // Перевірка, чи не пропустили всі гравці свій хід
+  // Check if all players skipped their move
   if (skippedCount >= gameData.players.length) {
-    // Всі гравці пропустили хід, завершуємо гру
+    // All players skipped their move, end game
     updateData.status = GAME_STATUS.SKIPPED;
     await admin.firestore().collection("games").doc(gameId).update(updateData);
     return;
   }
 
-  // Переведення поточної фази в статус "skipped"
+  // Change current phase status to "skipped"
   const currentPhase = {
     ...gameData.currentPhase,
     status: PHASE_STATUS.SKIPPED,
   };
 
-  // Додавання поточної фази до архіву
+  // Add current phase to archive
   const phases = [...(gameData.phases || []), currentPhase];
   updateData.phases = phases;
 
-  // Модифікація черги ходів
+  // Modify moves queue
   const moves = [...gameData.moves];
 
-  // Видаляємо найстаріший хід, якщо в черзі більше 5 ходів
+  // Remove oldest move if queue has more than 5 moves
   if (moves.length >= 5) {
     moves.shift();
   }
 
-  // Додаємо новий хід в кінець черги
+  // Add new move to end of queue
   const lastMove = moves[moves.length - 1];
   const playerIndex = gameData.players.findIndex(
     (player) => player.id === lastMove.playerId
@@ -121,10 +121,10 @@ async function handlePlanningTimeout(gameId, gameData, updateData) {
   const nextPlayerIndex = (playerIndex + 1) % gameData.players.length;
   const nextPlayerId = gameData.players[nextPlayerIndex].id;
 
-  // Визначаємо номер раунду для нового ходу
+  // Determine round number for new move
   let nextRound = lastMove.round;
   if (nextPlayerIndex === 0) {
-    nextRound++; // Новий раунд, якщо ходить перший гравець
+    nextRound++; // New round if first player's turn
   }
 
   moves.push({
@@ -135,12 +135,12 @@ async function handlePlanningTimeout(gameId, gameData, updateData) {
 
   updateData.moves = moves;
 
-  // Перевіряємо умови закінчення гри
+  // Check end game conditions
   if (await checkAndHandleGameEnd(gameId, gameData, updateData, nextRound)) {
-    return; // Гра завершена
+    return; // Game ended
   }
 
-  // Створюємо нову фазу
+  // Create new phase
   const newPhaseObj = newPhase(
     moves.find((m) => m.id === currentPhase.id + 1),
     currentPhase
@@ -148,36 +148,36 @@ async function handlePlanningTimeout(gameId, gameData, updateData) {
   updateData.currentPhase = newPhaseObj;
   updateData.currentRound = newPhaseObj.round;
 
-  // Плануємо таймаут для нової фази
+  // Schedule timeout for new phase
   const timeoutTaskId = await schedulePhaseTimeout(
     gameId,
     gameData.rules.timeForPlanning
   );
   updateData.currentPhase.timeoutTaskId = timeoutTaskId;
 
-  // Зберігаємо оновлення в БД
+  // Save update to DB
   await admin.firestore().collection("games").doc(gameId).update(updateData);
 }
 
 /**
- * Обробка таймауту фази "post-planning"
+ * Handles timeout of "post-planning" phase
  */
 async function handlePostPlanningTimeout(gameId, gameData, updateData) {
-  // Визначаємо тип питання
+  // Determine question type
   const questionType = gameData.currentPhase.contestedPlayerId
     ? QUESTION_TYPE.NUMBER
     : QUESTION_TYPE.VARIANT;
 
-  // Отримуємо випадкове питання з БД
+  // Get random question from DB
   let question;
 
   try {
-    // Для варіантів шукаємо питання з конкретного регіону
-    // Спочатку отримуємо кількість документів для визначення випадкового зсуву
+    // For variants, look for questions from specific region
+    // First get document count to determine random offset
     const queryConstraints = [["type", "==", questionType]];
 
     if (questionType === QUESTION_TYPE.VARIANT) {
-      // Додаємо фільтр за регіоном, якщо тип питання варіантний
+      // Add region filter if question type is variant
       queryConstraints.push([
         "subjectId",
         "==",
@@ -198,7 +198,7 @@ async function handlePostPlanningTimeout(gameId, gameData, updateData) {
     const count = countResult.data().count;
 
     if (count === 0) {
-      // Якщо немає питань для конкретного регіону, шукаємо загальні питання
+      // If no questions for specific region, look for general questions
       const generalCountQuery = await admin
         .firestore()
         .collection("questions")
@@ -213,10 +213,10 @@ async function handlePostPlanningTimeout(gameId, gameData, updateData) {
         throw new Error(`No questions found for type ${questionType}`);
       }
 
-      // Генеруємо випадковий індекс
+      // Generate random index
       const randomIndex = Math.floor(Math.random() * generalCount);
 
-      // Отримуємо питання за випадковим індексом
+      // Get question at random index
       const questionsSnapshot = await admin
         .firestore()
         .collection("questions")
@@ -232,10 +232,10 @@ async function handlePostPlanningTimeout(gameId, gameData, updateData) {
 
       question = questionsSnapshot.docs[0].data();
     } else {
-      // Генеруємо випадковий індекс
+      // Generate random index
       const randomIndex = Math.floor(Math.random() * count);
 
-      // Отримуємо питання за випадковим індексом
+      // Get question at random index
       const questionsQuery = admin
         .firestore()
         .collection("questions")
@@ -261,14 +261,14 @@ async function handlePostPlanningTimeout(gameId, gameData, updateData) {
   } catch (error) {
     console.error("Error getting question:", error);
 
-    // Створюємо запасне питання, якщо не вдалося отримати з БД
+    // Create fallback question if failed to get from DB
     question = createFallbackQuestion(
       questionType,
       gameData.currentPhase.regionId
     );
   }
 
-  // Оновлюємо поточну фазу
+  // Update current phase
   updateData.currentPhase = {
     ...gameData.currentPhase,
     status: PHASE_STATUS.ANSWER,
@@ -278,19 +278,19 @@ async function handlePostPlanningTimeout(gameId, gameData, updateData) {
     startAt: FieldValue.serverTimestamp(),
   };
 
-  // Плануємо таймаут для фази answer
+  // Schedule timeout for answer phase
   const timeoutTaskId = await schedulePhaseTimeout(
     gameId,
     gameData.rules.timeForAnswer
   );
   updateData.currentPhase.timeoutTaskId = timeoutTaskId;
 
-  // Зберігаємо оновлення в БД
+  // Save update to DB
   await admin.firestore().collection("games").doc(gameId).update(updateData);
 }
 
 /**
- * Створює запасне питання, якщо не вдалося отримати з БД
+ * Creates a fallback question if failed to get from DB
  */
 function createFallbackQuestion(questionType, regionId) {
   if (questionType === QUESTION_TYPE.VARIANT) {
@@ -321,56 +321,65 @@ function createFallbackQuestion(questionType, regionId) {
 }
 
 /**
- * Обробка таймауту фази "answer"
+ * Handles timeout of "answer" phase
  */
 async function handleAnswerTimeout(gameId, gameData, updateData) {
-  // Перевіряємо переможця
+  // Check for winners
   const winners = checkWinners(gameData.currentPhase);
 
-  // Обробляємо результат залежно від кількості переможців
+  // Process result based on number of winners
   if (winners.length === 1) {
-    // Один переможець - регіон зафарбовується у колір переможця
+    // One winner - region is colored in winner's color
     const winnerId = winners[0];
     const mapStatus = { ...gameData.map.status };
     mapStatus[gameData.currentPhase.regionId] = winnerId;
     updateData["map.status"] = mapStatus;
   }
 
-  // Оновлюємо поточну фазу
+  // Update current phase
   updateData.currentPhase = {
     ...gameData.currentPhase,
     status: PHASE_STATUS.POST_ANSWER,
     startAt: FieldValue.serverTimestamp(),
+    // Add the map status after for reference
+    mapStatusAfter: { ...gameData.map.status },
   };
 
-  // Плануємо таймаут для фази post-answer
+  // If the region was claimed, update the mapStatusAfter
+  if (winners.length === 1) {
+    const winnerId = winners[0];
+    updateData.currentPhase.mapStatusAfter[gameData.currentPhase.regionId] =
+      winnerId;
+  }
+
+  // Schedule timeout for post-answer phase
   const timeoutTaskId = await schedulePhaseTimeout(
     gameId,
     gameData.rules.timeForPostAnswer
   );
   updateData.currentPhase.timeoutTaskId = timeoutTaskId;
 
-  // Зберігаємо оновлені дані
+  // Save updated data
   await admin.firestore().collection("games").doc(gameId).update(updateData);
 }
 
 /**
- * Обробка таймауту фази "post-answer"
+ * Handles timeout of "post-answer" phase
  */
 async function handlePostAnswerTimeout(gameId, gameData, updateData) {
-  // Додаємо поточну фазу до архіву
+  // Add current phase to archive
   const phases = [...(gameData.phases || []), gameData.currentPhase];
   updateData.phases = phases;
 
-  // Модифікація черги ходів
+  // Modify moves queue
   const moves = [...gameData.moves];
 
-  // Видаляємо найстаріший хід, якщо в черзі більше 5 ходів
+  // Remove oldest move if queue has more than 5 moves
   if (moves.length >= 5) {
     moves.shift();
   }
 
-  // Додаємо новий хід в кінець черги
+  // Add new move to end of queue
   const lastMove = moves[moves.length - 1];
   const playerIndex = gameData.players.findIndex(
     (player) => player.id === lastMove.playerId
@@ -378,10 +387,10 @@ async function handlePostAnswerTimeout(gameId, gameData, updateData) {
   const nextPlayerIndex = (playerIndex + 1) % gameData.players.length;
   const nextPlayerId = gameData.players[nextPlayerIndex].id;
 
-  // Визначаємо номер раунду для нового ходу
+  // Determine round number for new move
   let nextRound = lastMove.round;
   if (nextPlayerIndex === 0) {
-    nextRound++; // Новий раунд, якщо ходить перший гравець
+    nextRound++; // New round if first player's turn
   }
   console.log(
     "moves before",
@@ -401,9 +410,9 @@ async function handlePostAnswerTimeout(gameId, gameData, updateData) {
 
   updateData.moves = moves;
 
-  // Перевірка умов завершення гри
+  // Check end game conditions
   if (await checkAndHandleGameEnd(gameId, gameData, updateData, nextRound)) {
-    return; // Гра завершена
+    return; // Game ended
   }
   console.log(
     "moves after",
@@ -414,7 +423,7 @@ async function handlePostAnswerTimeout(gameId, gameData, updateData) {
         .displayName,
     }))
   );
-  // Створюємо нову фазу
+  // Create new phase
   const newPhaseObj = newPhase(
     moves.find((m) => m.id === gameData.currentPhase.id + 1),
     gameData.currentPhase
@@ -422,13 +431,13 @@ async function handlePostAnswerTimeout(gameId, gameData, updateData) {
   updateData.currentPhase = newPhaseObj;
   updateData.currentRound = newPhaseObj.round;
 
-  // Плануємо таймаут для нової фази
+  // Schedule timeout for new phase
   const timeoutTaskId = await schedulePhaseTimeout(
     gameId,
     gameData.rules.timeForPlanning
   );
   updateData.currentPhase.timeoutTaskId = timeoutTaskId;
 
-  // Зберігаємо оновлені дані
+  // Save updated data
   await admin.firestore().collection("games").doc(gameId).update(updateData);
 }

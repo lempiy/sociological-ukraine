@@ -23,6 +23,23 @@
     color: #333;
   }
 
+  .result-message {
+    font-weight: bold;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 16px;
+
+    &.success {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    &.error {
+      background-color: #ffebee;
+      color: #c62828;
+    }
+  }
+
   .header-actions {
     display: flex;
     gap: 8px;
@@ -64,10 +81,21 @@
     border: 1px solid #e0e0e0;
     border-radius: 6px;
     transition: all 0.2s ease;
+    position: relative;
+    padding: 4px;
 
     &:hover {
       background-color: #f9f9f9;
       border-color: #bdbdbd;
+    }
+
+    &.selected-variant {
+      background-color: #f5f5f5;
+    }
+
+    &.correct-variant {
+      background-color: #e8f5e9;
+      border: 2px solid #4caf50;
     }
 
     nb-radio {
@@ -85,6 +113,30 @@
       max-width: 80px;
       max-height: 60px;
       border-radius: 4px;
+    }
+
+    // Player selection indicators
+    .player-selections {
+      position: absolute;
+      top: -8px;
+      right: 8px;
+      display: flex;
+      gap: 4px;
+
+      .player-selection {
+        border: 2px solid;
+        border-radius: 50%;
+        overflow: hidden;
+        width: 28px;
+        height: 28px;
+        background-color: white;
+
+        .selection-avatar {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+      }
     }
   }
 
@@ -125,7 +177,95 @@
   }
 }
 
-// Загальні стилі для всіх типів повідомлень внизу компонента
+// Number results section
+.number-results {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+
+  .correct-answer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #e8f5e9;
+    border-radius: 6px;
+    border: 1px solid #4caf50;
+
+    .result-label {
+      font-weight: bold;
+      margin-right: 10px;
+    }
+
+    .result-value {
+      font-size: 18px;
+      font-weight: bold;
+      color: #2e7d32;
+    }
+  }
+
+  .player-answers-list {
+    h4 {
+      margin-bottom: 12px;
+      font-size: 16px;
+      text-align: center;
+    }
+
+    .player-answer-item {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .player-info {
+        display: flex;
+        align-items: center;
+        width: 40%;
+
+        .player-avatar {
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          margin-right: 10px;
+          object-fit: cover;
+        }
+
+        .player-name {
+          font-weight: 600;
+        }
+      }
+
+      .player-numeric-answer {
+        font-weight: bold;
+        font-size: 16px;
+        width: 30%;
+        text-align: center;
+      }
+
+      .answer-distance {
+        width: 30%;
+        color: #666;
+        font-size: 14px;
+        text-align: right;
+      }
+    }
+
+    .no-answers {
+      text-align: center;
+      padding: 15px;
+      color: #666;
+      font-style: italic;
+    }
+  }
+}
+
+// General styles for all message types at the bottom
 .observer-message,
 .answer-submitted,
 .processing-message {
@@ -143,7 +283,7 @@
   }
 }
 
-// Специфічні стилі для кожного типу повідомлення
+// Specific styles for each message type
 .observer-message {
   background-color: #f0f0f0;
   color: #666;
@@ -164,32 +304,7 @@
   border-top: 1px solid #bbdefb;
 }
 
-// Адаптивність для мобільних пристроїв
-@media (max-width: 768px) {
-  .question-container {
-    max-width: 100%;
-    border-radius: 0;
-  }
-
-  .question-body {
-    padding: 16px;
-
-    .question-text {
-      font-size: 16px;
-    }
-  }
-
-  .number-input-container {
-    flex-direction: column;
-    align-items: stretch;
-
-    button {
-      width: 100%;
-    }
-  }
-}
-
-/* Додайте ці стилі до кінця вашого CSS файлу */
+// Custom radio styles
 .custom-radio {
   display: flex;
   position: relative;
@@ -208,7 +323,7 @@
     width: 0;
 
     &:checked ~ .radio-checkmark {
-      background-color: #3366ff; /* Колір Nebular primary */
+      background-color: #3366ff; /* Nebular primary color */
       border-color: #3366ff;
     }
 
@@ -262,8 +377,40 @@
   }
 }
 
-.variant-item {
-  &:hover {
-    background-color: #f9f9f9;
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .question-container {
+    max-width: 100%;
+    border-radius: 0;
+  }
+
+  .question-body {
+    padding: 16px;
+
+    .question-text {
+      font-size: 16px;
+    }
+  }
+
+  .number-input-container {
+    flex-direction: column;
+    align-items: stretch;
+
+    button {
+      width: 100%;
+    }
+  }
+
+  .player-answer-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+
+    .player-info,
+    .player-numeric-answer,
+    .answer-distance {
+      width: 100%;
+      text-align: left;
+    }
   }
 }

@@ -1,6 +1,14 @@
 <div class="question-container">
   <div class="question-header">
     <div class="region-name">{{ getRegionDisplayName() }}</div>
+    <!-- Result message displayed on post-answer -->
+    <div
+      *ngIf="currentPhase?.status === 'post-answer'"
+      class="result-message"
+      [ngClass]="{ success: winners.length > 0, error: winners.length === 0 }"
+    >
+      {{ getResultMessage() }}
+    </div>
     <div class="header-actions">
       <button
         nbButton
@@ -15,29 +23,42 @@
   </div>
 
   <div class="question-body">
-    <!-- Зображення питання (якщо є) -->
+    <!-- Question image (if any) -->
     <div *ngIf="question.imageUrl" class="question-image">
       <img [src]="question.imageUrl" alt="Зображення питання" />
     </div>
 
-    <!-- Текст питання -->
+    <!-- Question text -->
     <div class="question-text">
       {{ question.text }}
     </div>
 
-    <!-- Форма відповіді -->
+    <!-- Answer form -->
     <form [formGroup]="answerForm" (ngSubmit)="onSubmit()" class="answer-form">
-      <!-- Варіанти відповідей -->
+      <!-- Variant options -->
       <div *ngIf="question.type === 'variant'" class="variants-container">
-        <div *ngFor="let variant of question.variants" class="variant-item">
+        <div
+          *ngFor="let variant of question.variants"
+          class="variant-item"
+          [class.selected-variant]="hasPlayerSelectedVariant(variant.id)"
+          [class.correct-variant]="
+            currentPhase?.status === 'post-answer' &&
+            isVariantCorrect(variant.id)
+          "
+        >
           <label class="custom-radio">
             <input
               type="radio"
               [value]="variant.id"
               formControlName="variant"
-              [disabled]="!canAnswer() || answeredAlready"
+              class="radio-variant"
+              [disabled]="
+                !canAnswer() ||
+                answeredAlready ||
+                currentPhase?.status === 'post-answer'
+              "
             />
-            <span class="radio-checkmark"></span>
+            <!-- <span class="radio-checkmark"></span> -->
             <div class="variant-content">
               {{ variant.text }}
               <img
@@ -48,10 +69,39 @@
               />
             </div>
           </label>
+
+          <!-- Player selection indicators for variants -->
+          <div class="player-selections" *ngIf="playerAnswers.length > 0">
+            <ng-container
+              *ngFor="
+                let playerAnswer of playerAnswers;
+                index as i;
+                trackBy: trackByAnswerVariant
+              "
+            >
+              <div
+                class="player-selection"
+                [style.borderColor]="getPlayer(playerAnswer.playerId)?.color"
+                *ngIf="
+                  playerAnswer.answer &&
+                  playerAnswer.answer.variant === variant.id
+                "
+              >
+                <img
+                  [src]="
+                    getPlayer(playerAnswer.playerId)?.avatarUrl ||
+                    'assets/images/default-avatar.png'
+                  "
+                  [alt]="getPlayer(playerAnswer.playerId)?.displayName"
+                  class="selection-avatar"
+                />
+              </div>
+            </ng-container>
+          </div>
         </div>
       </div>
 
-      <!-- Числова відповідь -->
+      <!-- Number input -->
       <div *ngIf="question.type === 'number'" class="number-input-container">
         <nb-form-field>
           <input
@@ -60,7 +110,12 @@
             type="number"
             formControlName="number"
             placeholder="Введіть числову відповідь"
-            [disabled]="!canAnswer() || answeredAlready || isProcessing"
+            [disabled]="
+              !canAnswer() ||
+              answeredAlready ||
+              isProcessing ||
+              currentPhase?.status === 'post-answer'
+            "
           />
           <nb-icon nbSuffix icon="hash-outline"></nb-icon>
         </nb-form-field>
@@ -77,16 +132,19 @@
             answerForm.invalid ||
             !canAnswer() ||
             answeredAlready ||
-            isProcessing
+            isProcessing ||
+            currentPhase?.status === 'post-answer'
           "
         >
           Відповісти
         </button>
       </div>
 
-      <!-- Кнопка відправки для варіантів -->
+      <!-- Submit button for variants -->
       <button
-        *ngIf="question.type === 'variant'"
+        *ngIf="
+          question.type === 'variant' && currentPhase?.status !== 'post-answer'
+        "
         nbButton
         status="primary"
         type="submit"
@@ -98,10 +156,62 @@
         Відповісти
       </button>
     </form>
+
+    <!-- Show player numeric answers and correct answer in post-answer phase -->
+    <div
+      *ngIf="
+        question.type === 'number' && currentPhase?.status === 'post-answer'
+      "
+      class="number-results"
+    >
+      <div class="correct-answer">
+        <span class="result-label">Правильна відповідь:</span>
+        <span class="result-value"
+          >{{ question.numberAnswer.value }}
+          {{ question.numberAnswer.units }}</span
+        >
+      </div>
+
+      <div class="player-answers-list">
+        <h4>Відповіді гравців</h4>
+        <div
+          *ngFor="
+            let answer of sortedNumberAnswers;
+            index as i;
+            trackBy: trackByAnswer
+          "
+          class="player-answer-item"
+        >
+          <div class="player-info">
+            <img
+              [src]="
+                answer.player.avatarUrl || 'assets/images/default-avatar.png'
+              "
+              [alt]="answer.player.displayName"
+              class="player-avatar"
+            />
+            <span class="player-name">{{ answer.player.displayName }}</span>
+          </div>
+          <span
+            class="player-numeric-answer"
+            [style.color]="answer.player.color"
+          >
+            {{ answer.answer }} {{ question.numberAnswer.units }}
+          </span>
+          <span class="answer-distance">
+            (відхилення: {{ answer.diff.toFixed(2) }})
+          </span>
+        </div>
+
+        <div *ngIf="sortedNumberAnswers.length === 0" class="no-answers">
+          Ніхто не відповів
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- Таймер -->
-  <div class="timer-container">
+  <!-- Timer -->
+  <div class="timer-container" *ngIf="currentPhase?.status !== 'post-answer'">
     <div class="timer-label">
       Час на відповідь: {{ formatTime(timeRemaining) }}
     </div>
@@ -115,19 +225,29 @@
     </nb-progress-bar>
   </div>
 
-  <!-- Повідомлення для спостерігачів -->
-  <div *ngIf="!canAnswer() && !isProcessing" class="observer-message">
+  <!-- Observer message -->
+  <div
+    *ngIf="
+      !canAnswer() && !isProcessing && currentPhase?.status !== 'post-answer'
+    "
+    class="observer-message"
+  >
     <nb-icon icon="eye-outline"></nb-icon>
     <span>Ви спостерігаєте за ходом гри</span>
   </div>
 
-  <!-- Повідомлення про успішну відповідь -->
-  <div *ngIf="answeredAlready && !isProcessing" class="answer-submitted">
+  <!-- Answer submitted message -->
+  <div
+    *ngIf="
+      answeredAlready && !isProcessing && currentPhase?.status !== 'post-answer'
+    "
+    class="answer-submitted"
+  >
     <nb-icon icon="checkmark-circle-outline"></nb-icon>
     <span>Вашу відповідь прийнято!</span>
   </div>
 
-  <!-- Повідомлення про обробку відповіді -->
+  <!-- Processing message -->
   <div *ngIf="isProcessing" class="processing-message">
     <nb-spinner size="small" message="Обробка відповіді..."></nb-spinner>
   </div>

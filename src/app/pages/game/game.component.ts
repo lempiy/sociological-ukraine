@@ -3,16 +3,16 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 
-// Nebular модулі
+// Nebular modules
 import { NbSpinnerModule, NbButtonModule, NbIconModule, NbProgressBarModule } from '@nebular/theme';
 
-// Сервіси з core
+// Core services
 import { AuthService } from '../../core/services/auth.service';
 import { UserService } from '../../core/services/user.service';
 import { GameService } from '../../core/services/game.service';
 import { MapService } from './services/map.service';
 
-// Компоненти
+// Components
 import { LeaderboardComponent } from './components/leaderboard/leaderboard.component';
 import { MapComponent } from './components/map/map.component';
 import { RoundTimerComponent } from './components/round-timer/round-timer.component';
@@ -24,6 +24,7 @@ interface Player {
   id: string;
   displayName: string;
   color: string;
+  avatarUrl?: string;
 }
 
 
@@ -47,11 +48,11 @@ interface Player {
   providers: [MapService]
 })
 export class GameComponent implements OnInit, OnDestroy {
-  // Підписки
+  // Subscriptions
   private gameSubscription: Subscription | null = null;
   private mapSubscription: Subscription | null = null;
 
-  // Дані гри та користувача
+  // Game and user data
   gameId: string | null = null;
   gameData: any = null;
   userData: any = null;
@@ -59,9 +60,9 @@ export class GameComponent implements OnInit, OnDestroy {
   loading = true;
   error: string | null = null;
 
-  // Змінні для контролю UI
+  // UI control variables
   showQuestion = false;
-  isProcessingAction = false; // Додаємо новий прапорець для відстеження стану обробки
+  isProcessingAction = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -73,8 +74,8 @@ export class GameComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit(): void {
-    console.log('onInit', this.loading)
-    // Отримуємо параметр gameId з URL
+    console.log('onInit', this.loading);
+    // Get gameId parameter from URL
     this.route.params.subscribe(params => {
       this.gameId = params['gameId'];
       this.loadGameData();
@@ -88,10 +89,10 @@ export class GameComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Отримуємо поточного користувача
+    // Get current user
     this.authService.user$.subscribe((user: any) => {
       if (!user) {
-        // Якщо користувач не авторизований, перенаправляємо на головну сторінку
+        // If user is not authenticated, redirect to home page
         console.warn('unauthorized', user);
         this.router.navigate(['/']);
         return;
@@ -103,7 +104,7 @@ export class GameComponent implements OnInit, OnDestroy {
         photoURL: user.photoURL
       };
 
-      // Підписуємось на дані гри через game.service
+      // Subscribe to game data via game.service
       this.gameSubscription = this.gameService.getGame(this.gameId!)
         .subscribe(
           (gameData: any) => {
@@ -115,18 +116,26 @@ export class GameComponent implements OnInit, OnDestroy {
 
             this.gameData = gameData;
 
-            // Перевіряємо стан гри
+            // Check game status
             if (gameData.status === 'lobby') {
-              // Перенаправляємо на лоббі, якщо гра ще не почалась
+              // Redirect to lobby if game has not started
               this.router.navigate([`/game/${this.gameId}/lobby`]);
               return;
             } else if (gameData.status === 'finished' || gameData.status === 'skipped') {
-              // Перенаправляємо на результати, якщо гра закінчилась
+              // Redirect to results if game is finished
               this.router.navigate([`/game/${this.gameId}/result`]);
               return;
             }
 
-            // Завантажуємо дані карти
+            // Process any post-answer phase data
+            if (gameData.currentPhase && gameData.currentPhase.status === 'post-answer') {
+              // Add mapStatusAfter to the currentPhase for winner determination
+              if (!gameData.currentPhase.mapStatusAfter) {
+                gameData.currentPhase.mapStatusAfter = { ...gameData.map.status };
+              }
+            }
+
+            // Load map data
             this.loadMapData(gameData.map.id);
           },
           (error: any) => {
@@ -139,17 +148,17 @@ export class GameComponent implements OnInit, OnDestroy {
   }
 
   getPlayer(playerId: string): Player {
-    return this.gameData.players.find((p: Player) => p.id == playerId)
+    return this.gameData.players.find((p: Player) => p.id === playerId);
   }
 
   loadMapData(mapId: string): void {
-    // Відписуємось від попередньої підписки, якщо вона є
+    // Unsubscribe from previous subscription if it exists
     if (this.mapSubscription) {
       this.mapSubscription.unsubscribe();
     }
-    console.log(mapId)
+    console.log(mapId);
 
-    // Підписуємось на дані карти через MapService
+    // Subscribe to map data via MapService
     this.mapSubscription = this.mapService.getMapData(mapId)
       .subscribe(
         (mapData: any) => {
@@ -160,7 +169,7 @@ export class GameComponent implements OnInit, OnDestroy {
           }
 
           try {
-            // Парсимо GeoJSON
+            // Parse GeoJSON
             const geoJson = JSON.parse(mapData.geoJson);
             this.mapData = geoJson;
 
@@ -179,58 +188,58 @@ export class GameComponent implements OnInit, OnDestroy {
       );
   }
 
-  // Обробник вибору регіону користувачем
+  // Handler for region selection by user
   onRegionSelect(regionId: string): void {
-    // Перевіряємо, чи не в процесі обробки запиту
+    // Check if not already processing a request
     if (this.isProcessingAction) {
       return;
     }
 
-    // Перевіряємо, чи зараз хід користувача
+    // Check if it's the user's turn
     if (this.gameData.currentPhase.activePlayerId !== this.userData.id) {
       return;
     }
 
-    // Перевіряємо, чи стадія планування
+    // Check if planning phase
     if (this.gameData.currentPhase.status !== 'planning') {
       return;
     }
 
-    // Перевіряємо, чи регіон не належить користувачу
+    // Check if region doesn't belong to user
     if (this.gameData.map.status[regionId] === this.userData.id) {
       return;
     }
 
-    // Встановлюємо статус обробки
+    // Set processing status
     this.isProcessingAction = true;
 
-    // Викликаємо сервіс для вибору регіону
+    // Call service to select region
     this.gameService.setPlanningResult(this.gameId!, regionId)
       .subscribe({
         next: () => {
           console.log('Region selected successfully');
-          this.isProcessingAction = false; // Знімаємо прапорець після успішної обробки
+          this.isProcessingAction = false;
         },
         error: (error: any) => {
           console.error('Error selecting region:', error);
-          this.isProcessingAction = false; // Знімаємо прапорець у разі помилки
+          this.isProcessingAction = false;
         }
       });
   }
 
-  // Обробник відповіді користувача на запитання
+  // Handler for user answer to a question
   onAnswer(answerData: any): void {
-    // Перевіряємо, чи не в процесі обробки запиту
+    // Check if not already processing a request
     if (this.isProcessingAction) {
       return;
     }
 
-    // Перевіряємо, чи стадія відповіді
+    // Check if answer phase
     if (this.gameData.currentPhase.status !== 'answer') {
       return;
     }
 
-    // Перевіряємо, чи користувач може відповідати на запитання
+    // Check if user can answer the question
     const isActivePlayer = this.gameData.currentPhase.activePlayerId === this.userData.id;
     const isContestedPlayer = this.gameData.currentPhase.contestedPlayerId === this.userData.id;
 
@@ -238,7 +247,7 @@ export class GameComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Перевіряємо, чи користувач ще не відповів
+    // Check if user has not already answered
     if (isActivePlayer && this.gameData.currentPhase.activePlayerAnswer !== null) {
       return;
     }
@@ -247,20 +256,20 @@ export class GameComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Встановлюємо статус обробки
+    // Set processing status
     this.isProcessingAction = true;
 
-    // Передаємо відповідь через сервіс в залежності від типу питання
+    // Submit answer via service depending on question type
     if (this.gameData.currentPhase.question.type === 'variant') {
       this.gameService.setAnswer(this.gameId!, answerData.variant)
         .subscribe({
           next: () => {
             console.log('Answer submitted successfully');
-            this.isProcessingAction = false; // Знімаємо прапорець після успішної обробки
+            this.isProcessingAction = false;
           },
           error: (error: any) => {
             console.error('Error submitting answer:', error);
-            this.isProcessingAction = false; // Знімаємо прапорець у разі помилки
+            this.isProcessingAction = false;
           }
         });
     } else if (this.gameData.currentPhase.question.type === 'number') {
@@ -268,30 +277,30 @@ export class GameComponent implements OnInit, OnDestroy {
         .subscribe({
           next: () => {
             console.log('Answer submitted successfully');
-            this.isProcessingAction = false; // Знімаємо прапорець після успішної обробки
+            this.isProcessingAction = false;
           },
           error: (error: any) => {
             console.error('Error submitting answer:', error);
-            this.isProcessingAction = false; // Знімаємо прапорець у разі помилки
+            this.isProcessingAction = false;
           }
         });
     }
   }
 
-  // Визначаємо, чи є користувач активним гравцем поточної фази
+  // Check if user is the active player in current phase
   isActivePlayer(): boolean {
     if (!this.gameData || !this.userData) return false;
     return this.gameData.currentPhase.activePlayerId === this.userData.id;
   }
 
-  // Визначаємо, чи є користувач гравцем, чий регіон атакується
+  // Check if user is the contested player
   isContestedPlayer(): boolean {
     if (!this.gameData || !this.userData) return false;
     return this.gameData.currentPhase.contestedPlayerId === this.userData.id;
   }
 
   ngOnDestroy(): void {
-    // Відписуємось від всіх підписок
+    // Unsubscribe from all subscriptions
     if (this.gameSubscription) {
       this.gameSubscription.unsubscribe();
     }
@@ -300,4 +309,3 @@ export class GameComponent implements OnInit, OnDestroy {
     }
   }
 }
-

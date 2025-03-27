@@ -5,10 +5,10 @@ const { CloudTasksClient } = require("@google-cloud/tasks");
 const { CLOUD_TASKS_CONFIG } = require("../constants");
 
 /**
- * Створює нову фазу гри
- * @param {Object} move - Об'єкт ходу з playerId та round
- * @param {Object|null} previousPhase - Попередня фаза (якщо є)
- * @returns {Object} - Нова фаза гри
+ * Creates a new game phase
+ * @param {Object} move - Move object with playerId and round
+ * @param {Object|null} previousPhase - Previous phase (if any)
+ * @returns {Object} - New game phase
  */
 exports.newPhase = (move, previousPhase) => {
   return {
@@ -26,9 +26,9 @@ exports.newPhase = (move, previousPhase) => {
 };
 
 /**
- * Перевіряє переможців на основі відповідей на питання
- * @param {Object} phase - Поточна фаза гри
- * @returns {Array} - Масив ID гравців-переможців
+ * Checks for winners based on question answers
+ * @param {Object} phase - Current game phase
+ * @returns {Array} - Array of player IDs who won
  */
 exports.checkWinners = (phase) => {
   const winners = [];
@@ -38,7 +38,7 @@ exports.checkWinners = (phase) => {
   }
 
   if (phase.question.type === "variant") {
-    // Для питань з варіантами - перевіряємо, чи правильний варіант обрав гравець
+    // For variant questions - check if player chose the correct variant
     const correctVariant = phase.question.variants.find((v) => v.isCorrect);
     if (!correctVariant) {
       return winners;
@@ -53,10 +53,10 @@ exports.checkWinners = (phase) => {
       winners.push(phase.activePlayerId);
     }
   } else if (phase.question.type === "number") {
-    // Для числових питань - порівнюємо відповіді гравців
+    // For numeric questions - compare player answers
     const correctAnswer = phase.question.numberAnswer.value;
 
-    // Відповіді гравців (або null, якщо не відповіли)
+    // Player answers (or null if no answer)
     const activePlayerAnswer = phase.activePlayerAnswer
       ? phase.activePlayerAnswer.number
       : null;
@@ -65,7 +65,7 @@ exports.checkWinners = (phase) => {
       : null;
 
     if (phase.contestedPlayerId) {
-      // Дуель - порівнюємо відповіді гравців, хто ближче до правильної
+      // Duel - compare player answers, find which is closer to correct
       if (activePlayerAnswer !== null && contestedPlayerAnswer !== null) {
         const activePlayerDiff = Math.abs(activePlayerAnswer - correctAnswer);
         const contestedPlayerDiff = Math.abs(
@@ -77,23 +77,23 @@ exports.checkWinners = (phase) => {
         } else if (contestedPlayerDiff < activePlayerDiff) {
           winners.push(phase.contestedPlayerId);
         } else {
-          // Однакова відстань до правильної відповіді - обидва перемагають
+          // Equal distance to correct answer - both win (rare)
           winners.push(phase.activePlayerId, phase.contestedPlayerId);
         }
       } else if (activePlayerAnswer !== null) {
-        // Тільки активний гравець відповів
+        // Only active player answered
         winners.push(phase.activePlayerId);
       } else if (contestedPlayerAnswer !== null) {
-        // Тільки оспорюваний гравець відповів
+        // Only contested player answered
         winners.push(phase.contestedPlayerId);
       }
     } else {
-      // Звичайна відповідь (не дуель) - перевіряємо, чи відповів активний гравець правильно
+      // Normal answer (not duel) - check if active player answered correctly
       if (
         activePlayerAnswer !== null &&
         Math.abs(activePlayerAnswer - correctAnswer) / correctAnswer <= 0.1
       ) {
-        // Допускаємо похибку до 10% для числових відповідей
+        // Allow 10% error margin for number answers
         winners.push(phase.activePlayerId);
       }
     }
@@ -103,16 +103,16 @@ exports.checkWinners = (phase) => {
 };
 
 /**
- * Перевіряє, чи є в грі переможець
- * @param {Object} gameData - Дані гри
- * @returns {string|null} - ID гравця-переможця або null, якщо переможця немає
+ * Checks if there's a winner in the game
+ * @param {Object} gameData - Game data
+ * @returns {string|null} - Winner player ID or null if no winner
  */
 exports.checkWinner = (gameData) => {
-  // Для перемоги гравець повинен контролювати всі регіони на карті
+  // To win, a player must control all regions on the map
   const mapStatus = gameData.map.status;
   const regions = Object.keys(mapStatus);
 
-  // Для кожного гравця перевіряємо, чи контролює він всі регіони
+  // For each player, check if they control all regions
   for (const player of gameData.players) {
     const playerId = player.id;
     const controlledRegions = regions.filter(
@@ -120,11 +120,11 @@ exports.checkWinner = (gameData) => {
     );
 
     if (controlledRegions.length === regions.length) {
-      return playerId; // Гравець контролює всю карту
+      return playerId; // Player controls the entire map
     }
   }
 
-  // Альтернативна умова перемоги - гравець з найбільшою кількістю регіонів у кінці гри
+  // Alternative win condition - player with most regions at end of game
   if (
     gameData.rules.maxRounds > 0 &&
     gameData.currentRound >= gameData.rules.maxRounds
@@ -147,16 +147,16 @@ exports.checkWinner = (gameData) => {
     return winnerId;
   }
 
-  return null; // Немає переможця
+  return null; // No winner
 };
 
 /**
- * Перевіряє умови завершення гри та обробляє перемогу
- * @param {string} gameId - ID гри
- * @param {Object} gameData - Дані гри
- * @param {Object} updateData - Об'єкт для оновлення даних гри
- * @param {number} nextRound - Номер наступного раунду
- * @returns {boolean} - true, якщо гра завершена, false - якщо гра продовжується
+ * Checks end game conditions and handles winner
+ * @param {string} gameId - Game ID
+ * @param {Object} gameData - Game data
+ * @param {Object} updateData - Object for updating game data
+ * @param {number} nextRound - Next round number
+ * @returns {boolean} - true if game is finished, false if game continues
  */
 exports.checkAndHandleGameEnd = async (
   gameId,
@@ -164,16 +164,16 @@ exports.checkAndHandleGameEnd = async (
   updateData,
   nextRound
 ) => {
-  // Перевірка умов завершення гри
+  // Check end game conditions
   const winner = exports.checkWinner(gameData);
   const maxRoundsReached =
     gameData.rules.maxRounds > 0 && nextRound > gameData.rules.maxRounds;
 
   if (winner || maxRoundsReached) {
-    // Завершуємо гру, якщо є переможець або досягнуто максимальної кількості раундів
+    // End game if there's a winner or maximum rounds reached
     updateData.status = "finished";
 
-    // Додаємо поточну фазу до архіву, якщо вона є
+    // Add current phase to archive if it exists
     if (gameData.currentPhase) {
       const phases = [...(gameData.phases || []), gameData.currentPhase];
       updateData.phases = phases;
@@ -181,7 +181,7 @@ exports.checkAndHandleGameEnd = async (
 
     updateData.currentPhase = null;
 
-    // Якщо є переможець, позначаємо його
+    // If there's a winner, mark them
     if (winner) {
       const updatedPlayers = gameData.players.map((player) => {
         if (player.id === winner) {
@@ -192,20 +192,20 @@ exports.checkAndHandleGameEnd = async (
       updateData.players = updatedPlayers;
     }
 
-    // Зберігаємо оновлений об'єкт гри в БД
+    // Save updated game object to DB
     await admin.firestore().collection("games").doc(gameId).update(updateData);
 
-    return true; // Гра завершена
+    return true; // Game ended
   }
 
-  return false; // Гра продовжується
+  return false; // Game continues
 };
 
 /**
- * Планування відкладеного виклику функції таймауту
- * @param {string} gameId - ID гри
- * @param {number} delaySeconds - Затримка в секундах
- * @returns {string} - ID завдання Cloud Tasks
+ * Schedule a delayed call to the phase timeout function
+ * @param {string} gameId - Game ID
+ * @param {number} delaySeconds - Delay in seconds
+ * @returns {string} - Cloud Tasks task ID
  */
 exports.schedulePhaseTimeout = async (gameId, delaySeconds) => {
   if (process.env.FUNCTIONS_EMULATOR) {
@@ -216,7 +216,7 @@ exports.schedulePhaseTimeout = async (gameId, delaySeconds) => {
 };
 
 async function schedulePhaseTimeoutCloud(gameId, delaySeconds) {
-  // Налаштування Cloud Tasks
+  // Cloud Tasks settings
   const project = process.env.GCLOUD_PROJECT;
   const location = CLOUD_TASKS_CONFIG.LOCATION;
   const queue = CLOUD_TASKS_CONFIG.QUEUE;
@@ -224,15 +224,15 @@ async function schedulePhaseTimeoutCloud(gameId, delaySeconds) {
   const tasksClient = new CloudTasksClient();
   const queuePath = tasksClient.queuePath(project, location, queue);
 
-  // Створення унікального ID завдання
+  // Create unique task ID
   const taskId = `game-${gameId}-timeout-${Date.now()}`;
 
-  // Дані для передачі функції
+  // Data to pass to function
   const payload = {
     gameId: gameId,
   };
 
-  // Створення завдання
+  // Create task
   const task = {
     name: tasksClient.taskPath(project, location, queue, taskId),
     httpRequest: {
@@ -248,7 +248,7 @@ async function schedulePhaseTimeoutCloud(gameId, delaySeconds) {
     },
   };
 
-  // Створення завдання в черзі
+  // Create task in queue
   await tasksClient.createTask({
     parent: queuePath,
     task: task,
@@ -258,9 +258,9 @@ async function schedulePhaseTimeoutCloud(gameId, delaySeconds) {
 }
 
 async function schedulePhaseTimeoutEmulator(gameId, delaySeconds) {
-  // Створюємо унікальний ID завдання
+  // Create unique task ID
   const taskId = `game-${gameId}-timeout-${Date.now()}`;
-  // Використовуємо setTimeout для емуляції
+  // Use setTimeout for emulation
   setTimeout(async () => {
     try {
       const to = await admin
@@ -270,10 +270,10 @@ async function schedulePhaseTimeoutEmulator(gameId, delaySeconds) {
         .get();
       if (!to.exists) return;
       console.log(
-        `[Емулятор] >> Спрацював таймаут ${taskId} для гри ${gameId}`
+        `[Emulator] >> Timeout triggered ${taskId} for game ${gameId}`
       );
 
-      // Отримання даних гри
+      // Get game data
       const gameDoc = await admin
         .firestore()
         .collection("games")
@@ -281,42 +281,37 @@ async function schedulePhaseTimeoutEmulator(gameId, delaySeconds) {
         .get();
 
       if (!gameDoc.exists) {
-        console.error(`Гру ${gameId} не знайдено`);
+        console.error(`Game ${gameId} not found`);
         return;
       }
 
       const gameData = gameDoc.data();
 
-      // Перевірка, чи не завершена гра
+      // Check if game is not finished
       if (gameData.status !== "running") {
-        console.log(`Гра ${gameId} не активна, пропускаємо таймаут`);
+        console.log(`Game ${gameId} is not active, skipping timeout`);
         return;
       }
 
-      // Створюємо фейковий об'єкт запиту і відповіді
+      // Create mock request and response objects
       const mockReq = { body: { gameId } };
       const mockRes = {
         status: (code) => ({
           send: (data) => {
             console.log(
-              `[Емулятор] Відповідь на таймаут: ${code}, ${JSON.stringify(
-                data
-              )}`
+              `[Emulator] Timeout response: ${code}, ${JSON.stringify(data)}`
             );
           },
         }),
       };
 
-      // Отримуємо доступ до функції gameCurrentPhaseTimeout
+      // Get access to gameCurrentPhaseTimeout function
       const gameTimeouts = require("./game-timeouts");
 
-      // Викликаємо обробник таймауту
+      // Call timeout handler
       await gameTimeouts.gameCurrentPhaseTimeout(mockReq, mockRes);
     } catch (error) {
-      console.error(
-        `[Емулятор] Помилка при виконанні таймауту ${taskId}:`,
-        error
-      );
+      console.error(`[Emulator] Error executing timeout ${taskId}:`, error);
     }
   }, delaySeconds * 1000);
 
@@ -325,15 +320,15 @@ async function schedulePhaseTimeoutEmulator(gameId, delaySeconds) {
   });
 
   console.log(
-    `[Емулятор] > Запланували таймаут ${taskId} для гри ${gameId} через ${delaySeconds} секунд`
+    `[Emulator] > Scheduled timeout ${taskId} for game ${gameId} in ${delaySeconds} seconds`
   );
 
   return taskId;
 }
 
 /**
- * Скасування завдання таймауту
- * @param {string} taskId - ID завдання для скасування
+ * Cancel a timeout task
+ * @param {string} taskId - Task ID to cancel
  */
 exports.cancelTimeoutTask = async (taskId) => {
   if (process.env.FUNCTIONS_EMULATOR) {
@@ -362,5 +357,5 @@ async function cancelTimeoutTaskEmulator(taskId) {
     .collection("emulator-timers")
     .doc(taskId)
     .delete();
-  console.log(`[Емулятор] X Таймаут ${taskId} скасовано`);
+  console.log(`[Emulator] X Timeout ${taskId} canceled`);
 }
