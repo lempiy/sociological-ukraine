@@ -1,0 +1,164 @@
+.rules-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.rules-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.rules-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #3366ff;
+  margin-bottom: 1rem;
+}
+
+.rules-card {
+  margin-bottom: 2rem;
+}
+
+.section-container {
+  margin: 2rem 0;
+}
+
+.section-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #2e3a59;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #edf1f7;
+}
+
+.section-text {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: #2e3a59;
+}
+
+.process-list {
+  padding-left: 1.5rem;
+
+  li {
+    margin-bottom: 0.8rem;
+    line-height: 1.5;
+
+    ul {
+      margin-top: 0.5rem;
+
+      li {
+        margin-bottom: 0.4rem;
+      }
+    }
+  }
+}
+
+.question-types {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 2rem;
+  margin-top: 1.5rem;
+
+  .question-type {
+    background-color: #f7f9fc;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border-left: 4px solid #3366ff;
+
+    h3 {
+      font-size: 1.4rem;
+      margin-bottom: 1rem;
+      color: #2e3a59;
+    }
+
+    p {
+      margin-bottom: 1rem;
+    }
+  }
+}
+
+.example-container {
+  background-color: #fff;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid #edf1f7;
+  margin-top: 1rem;
+
+  strong {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #3366ff;
+  }
+
+  p {
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+  }
+
+  ol,
+  ul {
+    padding-left: 1.5rem;
+  }
+}
+
+.interface-description {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+
+  .interface-item {
+    background-color: #f7f9fc;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border-top: 4px solid #3366ff;
+
+    h3 {
+      font-size: 1.3rem;
+      margin-bottom: 0.8rem;
+      color: #2e3a59;
+    }
+
+    p {
+      line-height: 1.5;
+    }
+  }
+}
+
+.back-button-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+
+  button {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+
+    nb-icon {
+      margin-right: 0.5rem;
+    }
+  }
+}
+
+// Адаптивність для мобільних пристроїв
+@media (max-width: 768px) {
+  .rules-container {
+    padding: 1rem;
+  }
+
+  .rules-title {
+    font-size: 2rem;
+  }
+
+  .question-types,
+  .interface-description {
+    grid-template-columns: 1fr;
+  }
+
+  .example-container {
+    overflow-x: auto;
+  }
+}

@@ -100,9 +100,9 @@ exports.createGame = functions
         moves: [],
         rules: {
           timeForPlanning: parseInt(timeForPlanning),
-          timeForPostPlanning: 3, // 3 секунди на перехід між фазами
+          timeForPostPlanning: 2, // 2 секунди на перехід між фазами
           timeForAnswer: parseInt(timeForAnswer),
-          timeForPostAnswer: 5, // 5 секунд на показ результату
+          timeForPostAnswer: 5, // 10 секунд на показ результату
           numberOfPlayers: parseInt(numberOfPlayers),
           maxRounds: parseInt(maxRounds) || 0,
         },
