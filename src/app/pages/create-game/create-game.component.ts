@@ -38,12 +38,15 @@ export class CreateGameComponent implements OnInit {
   playerCounts: number[] = [1, 2, 3, 4, 5, 6];
 
   answerTimes = [
-    { value: 10, label: '10 секунд' },
     { value: 20, label: '20 секунд' },
-    { value: 30, label: '30 секунд' }
+    { value: 30, label: '30 секунд' },
+    { value: 45, label: '45 секунд' },
+    { value: 60, label: '1 хвилина' },
+    { value: 90, label: '1 хвилина 30 секунд' },
   ];
 
   planningTimes = [
+    { value: 30, label: '30 секунд' },
     { value: 60, label: '1 хвилина' },
     { value: 120, label: '2 хвилини' },
     { value: 180, label: '3 хвилини' }

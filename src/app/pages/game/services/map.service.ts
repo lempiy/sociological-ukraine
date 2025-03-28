@@ -6,6 +6,7 @@ import { doc, Firestore, onSnapshot } from '@angular/fire/firestore';
 
 interface PlayerColor {
     id: string;
+    displayName: string;
     color: string;
 }
 
@@ -244,5 +245,97 @@ export class MapService {
         this.map.selectAll('text')
             .attr('x', (d: any) => this.path.centroid(d)[0])
             .attr('y', (d: any) => this.path.centroid(d)[1]);
+    }
+
+    /**
+   * Initialize a static (non-interactive) map for results page
+   * @param container HTML element to render the map
+   * @param geoJson GeoJSON data
+   * @param mapStatus Current map status (regions ownership)
+   * @param playerColors Player colors
+   */
+    initStaticMap(container: HTMLElement, geoJson: any, mapStatus: any, players: PlayerColor[]): void {
+        this.zone.runOutsideAngular(() => {
+            // Clear previous map
+            d3.select(container).selectAll('*').remove();
+
+            this.currentMapStatus = mapStatus;
+            this.originalGeoJson = geoJson;
+            this.playerColors = players;
+
+            // Get container dimensions
+            this.width = container.clientWidth;
+            this.height = container.clientHeight;
+
+            // Create SVG element
+            const svg = d3.select(container)
+                .append('svg')
+                .attr('width', this.width)
+                .attr('height', this.height);
+
+            // Setup projection
+            const projection = d3.geoMercator()
+                .fitSize([this.width, this.height], geoJson);
+
+            // Create path generator
+            const path = d3.geoPath().projection(projection) as any;
+
+            // Render regions
+            const map = svg.append('g');
+
+            map.selectAll('path')
+                .data(geoJson.features)
+                .enter()
+                .append('path')
+                .attr('d', path)
+                .attr('id', (d: any) => `static-region-${d.properties["iso3166-2"]}`)
+                .attr('fill', (d: any) => this.getRegionColor(d.properties["iso3166-2"]))
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 0.5);
+
+            // Add region labels
+            map.selectAll('text')
+                .data(geoJson.features)
+                .enter()
+                .append('text')
+                .attr('x', (d: any) => path.centroid(d)[0])
+                .attr('y', (d: any) => path.centroid(d)[1])
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '8px')
+                .attr('fill', '#333')
+                .text((d: any) => this.getRegionLabel(d.properties["name"]));
+
+            // Add legend
+            this.addMapLegend(svg, players);
+        });
+    }
+
+    /**
+     * Add a legend to the map showing players and their colors
+     */
+    private addMapLegend(svg: any, players: PlayerColor[]): void {
+        const legendGroup = svg.append('g')
+            .attr('class', 'legend')
+            .attr('transform', `translate(0, 0)`);
+
+        const legendItems = legendGroup.selectAll('.legend-item')
+            .data(players)
+            .enter()
+            .append('g')
+            .attr('class', 'legend-item')
+            .attr('transform', (d: any, i: number) => `translate(0, ${i * 20})`);
+
+        // Color boxes
+        legendItems.append('rect')
+            .attr('width', 15)
+            .attr('height', 15)
+            .attr('fill', (d: PlayerColor) => d.color);
+
+        // Player names
+        legendItems.append('text')
+            .attr('x', 20)
+            .attr('y', 12)
+            .attr('font-size', '10px')
+            .text((d: PlayerColor) => d.displayName);
     }
 }

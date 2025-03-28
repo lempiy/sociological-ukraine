@@ -90,6 +90,17 @@ export class MapComponent implements OnInit, OnChanges, OnDestroy, AfterViewInit
     this.mapService.onResize();
   }
 
+  // Get region display name
+  getRegionDisplayName(): string {
+    if (!this.mapData) return this.currentPhase.regionId;
+    const feature = this.mapData.features.find((feature: any) => {
+      const regionId = feature.properties["iso3166-2"];
+      return regionId == this.currentPhase.regionId;
+    });
+    // This is a placeholder, could be enhanced with actual region names
+    return feature.properties.name;
+  }
+
   ngOnDestroy(): void {
     // Відписуємось від всіх підписок
     if (this.regionSelectSubscription) {

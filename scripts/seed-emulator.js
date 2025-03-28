@@ -31,28 +31,80 @@ async function importData() {
 
     console.log("GeoJSON карта успішно імпортована в емулятор");
 
-    // Зчитуємо запитання з JSON файлу
-    const questionsPath = path.join(__dirname, "./data/questions.json");
-    console.log(`Читаємо запитання з ${questionsPath}`);
-    const questionsRaw = fs.readFileSync(questionsPath, "utf8");
-    const questions = JSON.parse(questionsRaw);
+    // Зчитуємо всі файли запитань з директорії data/questions
+    const questionsDir = path.join(__dirname, "./data/questions");
+    console.log(`Читаємо запитання з директорії ${questionsDir}`);
+
+    // Перевіряємо, чи існує директорія
+    if (!fs.existsSync(questionsDir)) {
+      console.error(`Помилка: Директорія не знайдена: ${questionsDir}`);
+      console.log(
+        'Створіть директорію "data/questions" і додайте в неї JSON файли з запитаннями'
+      );
+      return;
+    }
+
+    // Отримуємо список всіх файлів у директорії
+    const files = fs.readdirSync(questionsDir);
+
+    // Фільтруємо тільки JSON файли
+    const jsonFiles = files.filter((file) => file.endsWith(".json"));
+
+    if (jsonFiles.length === 0) {
+      console.error(
+        `Помилка: JSON файли не знайдені в директорії ${questionsDir}`
+      );
+      return;
+    }
+
+    console.log(`Знайдено ${jsonFiles.length} JSON файлів з запитаннями`);
 
     // Імпорт запитань
     const batch = db.batch();
+    let questionCount = 0;
 
-    questions.forEach((question, index) => {
-      // Додаємо унікальний ID для кращого відстеження в емуляторі
-      const questionRef = db
-        .collection("questions")
-        .doc(`emulator-question-${index}`);
-      batch.set(questionRef, {
-        ...question,
-        createdAt: FieldValue.serverTimestamp(),
-      });
-    });
+    // Проходимо по кожному файлу і зчитуємо запитання
+    for (const file of jsonFiles) {
+      const filePath = path.join(questionsDir, file);
+      console.log(`Обробка файлу: ${filePath}`);
+
+      const questionsRaw = fs.readFileSync(filePath, "utf8");
+      let questions;
+
+      try {
+        questions = JSON.parse(questionsRaw);
+
+        // Перевіряємо, чи є questions масивом
+        if (!Array.isArray(questions)) {
+          console.warn(`Файл ${file} не містить масиву запитань, пропускаємо`);
+          continue;
+        }
+
+        // Додаємо кожне запитання з поточного файлу
+        questions.forEach(async (question, index) => {
+          // Використовуємо ім'я файлу і індекс для створення унікального ID
+          const fileBaseName = path.basename(file, ".json");
+          const questionRef = db
+            .collection("questions")
+            .doc(`emulator-${fileBaseName}-question-${index}`);
+
+          batch.set(questionRef, {
+            ...question,
+            sourceFile: file, // Додаємо інформацію про файл-джерело
+            createdAt: FieldValue.serverTimestamp(),
+          });
+
+          questionCount++;
+        });
+      } catch (error) {
+        console.error(`Помилка парсингу JSON у файлі ${file}:`, error);
+        continue;
+      }
+    }
 
     await batch.commit();
-    console.log(`Імпортовано ${questions.length} запитань в емулятор`);
+
+    console.log(`Імпортовано ${questionCount} запитань в емулятор`);
 
     // Додатково можемо створити тестовий документ користувача
     await db.collection("users").doc("test-user-1").set({
@@ -73,22 +125,36 @@ async function importData() {
 // Перевіряємо наявність файлів перед запуском
 function checkFiles() {
   const geoJsonPath = path.join(__dirname, "./data/ukraine.geojson");
-  const questionsPath = path.join(__dirname, "./data/questions.json");
+  const questionsDir = path.join(__dirname, "./data/questions");
 
   const geoJsonExists = fs.existsSync(geoJsonPath);
-  const questionsExist = fs.existsSync(questionsPath);
+  const questionsDirExists = fs.existsSync(questionsDir);
 
   if (!geoJsonExists) {
     console.error(`Помилка: Файл не знайдено: ${geoJsonPath}`);
     console.log('Створіть директорію "data" і додайте файл "ukraine.geojson"');
   }
 
-  if (!questionsExist) {
-    console.error(`Помилка: Файл не знайдено: ${questionsPath}`);
-    console.log('Створіть директорію "data" і додайте файл "questions.json"');
+  if (!questionsDirExists) {
+    console.error(`Помилка: Директорію не знайдено: ${questionsDir}`);
+    console.log(
+      'Створіть директорію "data/questions" і додайте в неї JSON файли з запитаннями'
+    );
+  } else {
+    // Перевіряємо наявність JSON файлів у директорії
+    const files = fs.readdirSync(questionsDir);
+    const jsonFiles = files.filter((file) => file.endsWith(".json"));
+
+    if (jsonFiles.length === 0) {
+      console.error(
+        `Попередження: JSON файли не знайдені в директорії ${questionsDir}`
+      );
+    } else {
+      console.log(`Знайдено ${jsonFiles.length} JSON файлів з запитаннями`);
+    }
   }
 
-  return geoJsonExists && questionsExist;
+  return geoJsonExists && questionsDirExists;
 }
 
 // Запускаємо скрипт, якщо файли існують

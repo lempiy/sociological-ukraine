@@ -1,1 +1,125 @@
-<p>game-result works!</p>
+<div class="result-container">
+  <!-- Loading screen -->
+  <div *ngIf="loading" class="loading-container">
+    <nb-spinner
+      status="primary"
+      size="large"
+      message="Завантаження результатів..."
+    ></nb-spinner>
+  </div>
+
+  <!-- Error message -->
+  <div *ngIf="error" class="error-container">
+    <h2>Помилка</h2>
+    <p>{{ error }}</p>
+    <button nbButton status="primary" routerLink="/">На головну</button>
+  </div>
+
+  <!-- Main results content -->
+  <div *ngIf="!loading && !error && gameData" class="results-content">
+    <div class="results-header">
+      <h1>Результати гри "{{ gameData.name }}"</h1>
+      <div class="actions">
+        <button nbButton ghost (click)="copyResultLink()" class="share-button">
+          <nb-icon icon="share-outline"></nb-icon>
+          Поділитися
+        </button>
+      </div>
+    </div>
+
+    <!-- Result map -->
+    <nb-card class="map-card">
+      <nb-card-header>Карта результатів</nb-card-header>
+      <nb-card-body>
+        <div id="result-map-container" class="result-map"></div>
+      </nb-card-body>
+    </nb-card>
+
+    <!-- Winner message (only shown to winner) -->
+    <div *ngIf="isCurrentUserWinner" class="winner-message">
+      <nb-card status="success">
+        <nb-card-body>
+          <div class="winner-content">
+            <ng-container *ngIf="gameData.status == 'finished'">
+              <nb-icon icon="award-outline" class="trophy-icon"></nb-icon>
+              <h2>Вітаємо, ви переможець!</h2>
+            </ng-container>
+            <ng-container *ngIf="gameData.status == 'skipped'">
+              <nb-icon
+                icon="alert-circle-outline"
+                class="trophy-icon"
+              ></nb-icon>
+              <h2>Гра була перервана</h2>
+            </ng-container>
+          </div>
+        </nb-card-body>
+      </nb-card>
+    </div>
+
+    <!-- Results table -->
+    <nb-card class="results-table-card">
+      <nb-card-header>Таблиця результатів</nb-card-header>
+      <nb-card-body>
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>Гравець</th>
+              <th>Регіонів</th>
+              <th>Результат</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let player of sortedPlayers; let i = index"
+              [class.current-user]="player.id === userData.id"
+            >
+              <td class="player-cell">
+                <div class="player-info">
+                  <div
+                    class="rank-badge"
+                    [ngClass]="{
+                      first: i === 0,
+                      second: i === 1,
+                      third: i === 2
+                    }"
+                  >
+                    {{ i + 1 }}
+                  </div>
+                  <img
+                    [src]="
+                      player.avatarUrl || 'assets/images/default-avatar.png'
+                    "
+                    alt="аватар"
+                    class="player-avatar"
+                  />
+                  <span class="player-name">{{ player.displayName }}</span>
+                </div>
+              </td>
+              <td class="regions-cell">
+                <div class="regions-count" [style.color]="player.color">
+                  {{ player.regionsCount || 0 }}
+                </div>
+              </td>
+              <td class="result-cell">
+                <ng-container *ngIf="gameData.status == 'finished'">
+                  <div *ngIf="i === 0" class="winner-badge">
+                    <nb-icon icon="award-outline"></nb-icon> Переможець
+                  </div>
+                  <div *ngIf="i !== 0">{{ i + 1 }} місце</div>
+                </ng-container>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </nb-card-body>
+    </nb-card>
+
+    <!-- Home button -->
+    <div class="home-button-container">
+      <button nbButton status="primary" (click)="goHome()">
+        <nb-icon icon="home-outline"></nb-icon>
+        На головну сторінку
+      </button>
+    </div>
+  </div>
+</div>

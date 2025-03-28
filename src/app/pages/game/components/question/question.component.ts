@@ -49,6 +49,7 @@ export class QuestionComponent implements OnInit, OnChanges, OnDestroy {
   @Input() isProcessing: boolean = false;
   @Input() currentPhase: any; // Add current phase to monitor status
   @Input() players: Player[] = []; // Add players to get colors
+  @Input() mapData: any | null = null;
 
   @Output() answerSubmit = new EventEmitter<any>();
   @Output() close = new EventEmitter<void>();
@@ -279,8 +280,13 @@ export class QuestionComponent implements OnInit, OnChanges, OnDestroy {
 
   // Get region display name
   getRegionDisplayName(): string {
+    if (!this.mapData) return this.regionId;
+    const feature = this.mapData.features.find((feature: any) => {
+      const regionId = feature.properties["iso3166-2"];
+      return regionId == this.regionId;
+    });
     // This is a placeholder, could be enhanced with actual region names
-    return this.regionId;
+    return feature.properties.name;
   }
 
   ngOnDestroy(): void {

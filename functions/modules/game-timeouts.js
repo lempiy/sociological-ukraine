@@ -176,7 +176,7 @@ async function handlePostPlanningTimeout(gameId, gameData, updateData) {
     // First get document count to determine random offset
     const queryConstraints = [["type", "==", questionType]];
 
-    if (questionType === QUESTION_TYPE.VARIANT) {
+    if (questionType === QUESTION_TYPE.NUMBER) {
       // Add region filter if question type is variant
       queryConstraints.push([
         "subjectId",
@@ -185,19 +185,27 @@ async function handlePostPlanningTimeout(gameId, gameData, updateData) {
       ]);
     }
 
-    const countQuery = await admin
+    let countQuery = await admin
       .firestore()
       .collection("questions")
       .where(...queryConstraints[0]);
 
     if (queryConstraints.length > 1) {
-      countQuery.where(...queryConstraints[1]);
+      countQuery = countQuery.where(...queryConstraints[1]);
     }
+
+    console.dir(countQuery);
+    console.log();
 
     const countResult = await countQuery.count().get();
     const count = countResult.data().count;
 
     if (count === 0) {
+      console.log(
+        "NOT found " + " questions with type " + questionType,
+        gameData.currentPhase.regionId,
+        JSON.stringify(queryConstraints)
+      );
       // If no questions for specific region, look for general questions
       const generalCountQuery = await admin
         .firestore()
@@ -232,17 +240,22 @@ async function handlePostPlanningTimeout(gameId, gameData, updateData) {
 
       question = questionsSnapshot.docs[0].data();
     } else {
+      console.log(
+        "found " + count + " questions with type " + questionType,
+        gameData.currentPhase.regionId,
+        JSON.stringify(queryConstraints)
+      );
       // Generate random index
       const randomIndex = Math.floor(Math.random() * count);
 
       // Get question at random index
-      const questionsQuery = admin
+      let questionsQuery = admin
         .firestore()
         .collection("questions")
         .where(...queryConstraints[0]);
 
       if (queryConstraints.length > 1) {
-        questionsQuery.where(...queryConstraints[1]);
+        questionsQuery = questionsQuery.where(...queryConstraints[1]);
       }
 
       const questionsSnapshot = await questionsQuery

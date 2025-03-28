@@ -17,7 +17,7 @@
       *ngIf="currentPhase.status === 'post-planning'"
     >
       <nb-icon icon="pin-outline"></nb-icon>
-      <span>Регіон обрано: {{ currentPhase.regionId }}</span>
+      <span>Регіон обрано: {{ getRegionDisplayName() }}</span>
     </div>
 
     <div

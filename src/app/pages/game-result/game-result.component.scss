@@ -1,0 +1,286 @@
+.result-container {
+  width: 100%;
+  min-height: calc(100vh - 128px); // Adjust for navbar and footer
+  padding: 2rem;
+  background-color: #f6f6f6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.loading-container,
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  min-height: 50vh;
+
+  p {
+    margin-top: 16px;
+    font-size: 16px;
+  }
+}
+
+.error-container {
+  h2 {
+    color: #f44336;
+    margin-bottom: 16px;
+  }
+
+  button {
+    margin-top: 16px;
+  }
+}
+
+.results-content {
+  width: 100%;
+  max-width: 1000px;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  h1 {
+    color: #2e3a59;
+    font-size: 1.8rem;
+    margin: 0;
+  }
+
+  .actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .share-button {
+    nb-icon {
+      margin-right: 0.5rem;
+    }
+  }
+}
+
+.map-card {
+  width: 100%;
+
+  nb-card-body {
+    padding: 1rem;
+    overflow: hidden;
+  }
+}
+
+.result-map {
+  width: 100%;
+  height: 400px;
+}
+
+.winner-message {
+  width: 100%;
+
+  nb-card-body {
+    padding: 1.5rem;
+  }
+
+  .winner-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+
+    h2 {
+      margin: 0;
+      color: #2e7d32;
+      font-size: 1.5rem;
+    }
+
+    .trophy-icon {
+      color: gold;
+      font-size: 2rem;
+    }
+  }
+}
+
+.results-table-card {
+  width: 100%;
+
+  nb-card-header {
+    font-weight: bold;
+  }
+}
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid #edf1f7;
+  }
+
+  th {
+    font-weight: bold;
+    color: #8f9bb3;
+  }
+
+  tr.current-user {
+    background-color: #fff8e1;
+  }
+
+  .player-cell {
+    width: 50%;
+
+    .player-info {
+      display: flex;
+      align-items: center;
+      min-width: 24px;
+      gap: 1rem;
+    }
+
+    .rank-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-weight: bold;
+      background-color: #e0e0e0;
+      color: #333;
+
+      &.first {
+        background-color: gold;
+        color: #333;
+      }
+
+      &.second {
+        background-color: silver;
+        color: #333;
+      }
+
+      &.third {
+        background-color: #cd7f32; // Bronze
+        color: white;
+      }
+    }
+
+    .player-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .player-name {
+      font-weight: 500;
+    }
+  }
+
+  .regions-cell {
+    width: 20%;
+
+    .regions-count {
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+  }
+
+  .result-cell {
+    width: 30%;
+
+    .winner-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #f57c00;
+      font-weight: bold;
+
+      nb-icon {
+        color: gold;
+      }
+    }
+  }
+}
+
+.home-button-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+
+  button {
+    padding-left: 2rem;
+    padding-right: 2rem;
+
+    nb-icon {
+      margin-right: 0.5rem;
+    }
+  }
+}
+
+// Responsive styles
+@media (max-width: 768px) {
+  .result-container {
+    padding: 1rem;
+  }
+
+  .results-header {
+    flex-direction: column;
+    align-items: flex-start;
+
+    h1 {
+      font-size: 1.5rem;
+    }
+  }
+
+  .result-map {
+    height: 300px;
+  }
+
+  .results-table {
+    th,
+    td {
+      padding: 0.75rem;
+    }
+
+    .player-cell {
+      .player-info {
+        gap: 0.5rem;
+      }
+
+      .rank-badge {
+        width: 24px;
+        height: 24px;
+        font-size: 0.8rem;
+      }
+
+      .player-avatar {
+        width: 30px;
+        height: 30px;
+      }
+
+      .player-name {
+        font-size: 0.9rem;
+      }
+    }
+
+    .regions-cell {
+      .regions-count {
+        font-size: 1rem;
+      }
+    }
+
+    .result-cell {
+      font-size: 0.9rem;
+    }
+  }
+}

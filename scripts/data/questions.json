@@ -1,8 +1,662 @@
 [
-    {
-        "id": "1",
-        "question": "How do you do?",
-        "answers": ["Fine", "Not fine", "Well", "So-so"],
-        "correct_answer": [0]
-    }
+  {
+    "id": "q001",
+    "type": "variant",
+    "subjectId": "*",
+    "text": "Яка чисельність наявного населення України була на 1 січня 2022 року (без урахування тимчасово окупованої території АР Крим і м. Севастополя)?",
+    "variants": [
+      {
+        "id": 1,
+        "text": "38,4 млн осіб",
+        "isCorrect": false
+      },
+      {
+        "id": 2,
+        "text": "41,2 млн осіб",
+        "isCorrect": true
+      },
+      {
+        "id": 3,
+        "text": "43,7 млн осіб",
+        "isCorrect": false
+      },
+      {
+        "id": 4,
+        "text": "45,1 млн осіб",
+        "isCorrect": false
+      }
+    ],
+    "updatedAt": "2024-03-27T10:00:00Z",
+    "createdAt": "2024-03-27T10:00:00Z"
+  },
+  {
+    "id": "q002",
+    "type": "variant",
+    "subjectId": "*",
+    "text": "Який відсоток населення України проживав у міських поселеннях станом на 1 січня 2022 року?",
+    "variants": [
+      {
+        "id": 1,
+        "text": "59,6%",
+        "isCorrect": false
+      },
+      {
+        "id": 2,
+        "text": "65,8%",
+        "isCorrect": false
+      },
+      {
+        "id": 3,
+        "text": "69,7%",
+        "isCorrect": true
+      },
+      {
+        "id": 4,
+        "text": "73,2%",
+        "isCorrect": false
+      }
+    ],
+    "updatedAt": "2024-03-27T10:00:00Z",
+    "createdAt": "2024-03-27T10:00:00Z"
+  },
+  {
+    "id": "q003",
+    "type": "variant",
+    "subjectId": "*",
+    "text": "Яке скорочення чисельності населення України відбулося у 2021 році?",
+    "variants": [
+      {
+        "id": 1,
+        "text": "-272,3 тис. осіб",
+        "isCorrect": false
+      },
+      {
+        "id": 2,
+        "text": "-323,4 тис. осіб",
+        "isCorrect": false
+      },
+      {
+        "id": 3,
+        "text": "-421,0 тис. осіб",
+        "isCorrect": false
+      },
+      {
+        "id": 4,
+        "text": "-442,3 тис. осіб",
+        "isCorrect": true
+      }
+    ],
+    "updatedAt": "2024-03-27T10:00:00Z",
+    "createdAt": "2024-03-27T10:00:00Z"
+  },
+  {
+    "id": "q004",
+    "type": "variant",
+    "subjectId": "*",
+    "text": "Скільки зареєстрованих шлюбів було укладено в Україні у 2021 році?",
+    "variants": [
+      {
+        "id": 1,
+        "text": "168,0 тис.",
+        "isCorrect": false
+      },
+      {
+        "id": 2,
+        "text": "214,0 тис.",
+        "isCorrect": true
+      },
+      {
+        "id": 3,
+        "text": "237,9 тис.",
+        "isCorrect": false
+      },
+      {
+        "id": 4,
+        "text": "252,6 тис.",
+        "isCorrect": false
+      }
+    ],
+    "updatedAt": "2024-03-27T10:00:00Z",
+    "createdAt": "2024-03-27T10:00:00Z"
+  },
+  {
+    "id": "q005",
+    "type": "variant",
+    "subjectId": "*",
+    "text": "Скільки розірвань шлюбів було зареєстровано в Україні у 2021 році?",
+    "variants": [
+      {
+        "id": 1,
+        "text": "96,2 тис.",
+        "isCorrect": false
+      },
+      {
+        "id": 2,
+        "text": "119,8 тис.",
+        "isCorrect": false
+      },
+      {
+        "id": 3,
+        "text": "121,4 тис.",
+        "isCorrect": true
+      },
+      {
+        "id": 4,
+        "text": "138,0 тис.",
+        "isCorrect": false
+      }
+    ],
+    "updatedAt": "2024-03-27T10:00:00Z",
+    "createdAt": "2024-03-27T10:00:00Z"
+  },
+  {
+    "id": "q006",
+    "type": "variant",
+    "subjectId": "*",
+    "text": "Яка була кількість померлих від хвороб системи кровообігу в Україні у 2021 році?",
+    "variants": [
+      {
+        "id": 1,
+        "text": "348712 осіб",
+        "isCorrect": false
+      },
+      {
+        "id": 2,
+        "text": "376481 осіб",
+        "isCorrect": false
+      },
+      {
+        "id": 3,
+        "text": "408163 осіб",
+        "isCorrect": false
+      },
+      {
+        "id": 4,
+        "text": "429291 осіб",
+        "isCorrect": true
+      }
+    ],
+    "updatedAt": "2024-03-27T10:00:00Z",
+    "createdAt": "2024-03-27T10:00:00Z"
+  },
+  {
+    "id": "q007",
+    "type": "variant",
+    "subjectId": "*",
+    "text": "Яка кількість померлих від COVID-19 (вірус ідентифікований) була зареєстрована в Україні у 2021 році?",
+    "variants": [
+      {
+        "id": 1,
+        "text": "20583 особи",
+        "isCorrect": false
+      },
+      {
+        "id": 2,
+        "text": "56124 особи",
+        "isCorrect": false
+      },
+      {
+        "id": 3,
+        "text": "85975 осіб",
+        "isCorrect": true
+      },
+      {
+        "id": 4,
+        "text": "109426 осіб",
+        "isCorrect": false
+      }
+    ],
+    "updatedAt": "2024-03-27T10:00:00Z",
+    "createdAt": "2024-03-27T10:00:00Z"
+  },
+  {
+    "id": "q008",
+    "type": "variant",
+    "subjectId": "*",
+    "text": "Який був рівень безробіття населення у віці 15-70 років в Україні у 2021 році?",
+    "variants": [
+      {
+        "id": 1,
+        "text": "7,2%",
+        "isCorrect": false
+      },
+      {
+        "id": 2,
+        "text": "8,5%",
+        "isCorrect": false
+      },
+      {
+        "id": 3,
+        "text": "9,9%",
+        "isCorrect": true
+      },
+      {
+        "id": 4,
+        "text": "11,3%",
+        "isCorrect": false
+      }
+    ],
+    "updatedAt": "2024-03-27T10:00:00Z",
+    "createdAt": "2024-03-27T10:00:00Z"
+  },
+  {
+    "id": "q009",
+    "type": "variant",
+    "subjectId": "*",
+    "text": "Яка була середньомісячна номінальна заробітна плата в Україні у 2022 році?",
+    "variants": [
+      {
+        "id": 1,
+        "text": "11591 грн",
+        "isCorrect": false
+      },
+      {
+        "id": 2,
+        "text": "14014 грн",
+        "isCorrect": false
+      },
+      {
+        "id": 3,
+        "text": "14847 грн",
+        "isCorrect": true
+      },
+      {
+        "id": 4,
+        "text": "16245 грн",
+        "isCorrect": false
+      }
+    ],
+    "updatedAt": "2024-03-27T10:00:00Z",
+    "createdAt": "2024-03-27T10:00:00Z"
+  },
+  {
+    "id": "q010",
+    "type": "variant",
+    "subjectId": "*",
+    "text": "Який був середній розмір місячної пенсії пенсіонерів в Україні на кінець 2022 року?",
+    "variants": [
+      {
+        "id": 1,
+        "text": "3507,5 грн",
+        "isCorrect": false
+      },
+      {
+        "id": 2,
+        "text": "3991,5 грн",
+        "isCorrect": false
+      },
+      {
+        "id": 3,
+        "text": "4622,6 грн",
+        "isCorrect": true
+      },
+      {
+        "id": 4,
+        "text": "5246,8 грн",
+        "isCorrect": false
+      }
+    ],
+    "updatedAt": "2024-03-27T10:00:00Z",
+    "createdAt": "2024-03-27T10:00:00Z"
+  },
+  {
+    "id": "q011",
+    "type": "variant",
+    "subjectId": "*",
+    "text": "Скільки закладів дошкільної освіти функціонувало в Україні на кінець 2022 року?",
+    "variants": [
+      {
+        "id": 1,
+        "text": "11,5 тис.",
+        "isCorrect": false
+      },
+      {
+        "id": 2,
+        "text": "13,9 тис.",
+        "isCorrect": true
+      },
+      {
+        "id": 3,
+        "text": "15,0 тис.",
+        "isCorrect": false
+      },
+      {
+        "id": 4,
+        "text": "16,7 тис.",
+        "isCorrect": false
+      }
+    ],
+    "updatedAt": "2024-03-27T10:00:00Z",
+    "createdAt": "2024-03-27T10:00:00Z"
+  },
+  {
+    "id": "q012",
+    "type": "variant",
+    "subjectId": "*",
+    "text": "Скільки закладів загальної середньої освіти функціонувало в Україні на початок 2022/2023 навчального року?",
+    "variants": [
+      {
+        "id": 1,
+        "text": "13,0 тис.",
+        "isCorrect": true
+      },
+      {
+        "id": 2,
+        "text": "14,0 тис.",
+        "isCorrect": false
+      },
+      {
+        "id": 3,
+        "text": "14,9 тис.",
+        "isCorrect": false
+      },
+      {
+        "id": 4,
+        "text": "15,8 тис.",
+        "isCorrect": false
+      }
+    ],
+    "updatedAt": "2024-03-27T10:00:00Z",
+    "createdAt": "2024-03-27T10:00:00Z"
+  },
+  {
+    "id": "q013",
+    "type": "variant",
+    "subjectId": "*",
+    "text": "Скільки учнів навчалося у закладах загальної середньої освіти України на початок 2022/2023 навчального року?",
+    "variants": [
+      {
+        "id": 1,
+        "text": "3675 тис.",
+        "isCorrect": false
+      },
+      {
+        "id": 2,
+        "text": "3920 тис.",
+        "isCorrect": false
+      },
+      {
+        "id": 3,
+        "text": "4042 тис.",
+        "isCorrect": true
+      },
+      {
+        "id": 4,
+        "text": "4230 тис.",
+        "isCorrect": false
+      }
+    ],
+    "updatedAt": "2024-03-27T10:00:00Z",
+    "createdAt": "2024-03-27T10:00:00Z"
+  },
+  {
+    "id": "q014",
+    "type": "variant",
+    "subjectId": "*",
+    "text": "Скільки закладів професійної (професійно-технічної) освіти функціонувало в Україні на кінець 2022 року?",
+    "variants": [
+      {
+        "id": 1,
+        "text": "598",
+        "isCorrect": false
+      },
+      {
+        "id": 2,
+        "text": "670",
+        "isCorrect": true
+      },
+      {
+        "id": 3,
+        "text": "694",
+        "isCorrect": false
+      },
+      {
+        "id": 4,
+        "text": "711",
+        "isCorrect": false
+      }
+    ],
+    "updatedAt": "2024-03-27T10:00:00Z",
+    "createdAt": "2024-03-27T10:00:00Z"
+  },
+  {
+    "id": "q015",
+    "type": "variant",
+    "subjectId": "*",
+    "text": "Скільки закладів вищої освіти функціонувало в Україні на початок 2022/2023 навчального року?",
+    "variants": [
+      {
+        "id": 1,
+        "text": "570",
+        "isCorrect": false
+      },
+      {
+        "id": 2,
+        "text": "630",
+        "isCorrect": true
+      },
+      {
+        "id": 3,
+        "text": "675",
+        "isCorrect": false
+      },
+      {
+        "id": 4,
+        "text": "712",
+        "isCorrect": false
+      }
+    ],
+    "updatedAt": "2024-03-27T10:00:00Z",
+    "createdAt": "2024-03-27T10:00:00Z"
+  },
+  {
+    "id": "q016",
+    "type": "variant",
+    "subjectId": "*",
+    "text": "Скільки лікарів усіх спеціальностей (без зубних лікарів) працювало в Україні у 2022 році?",
+    "variants": [
+      {
+        "id": 1,
+        "text": "144 тис.",
+        "isCorrect": false
+      },
+      {
+        "id": 2,
+        "text": "163 тис.",
+        "isCorrect": true
+      },
+      {
+        "id": 3,
+        "text": "180 тис.",
+        "isCorrect": false
+      },
+      {
+        "id": 4,
+        "text": "195 тис.",
+        "isCorrect": false
+      }
+    ],
+    "updatedAt": "2024-03-27T10:00:00Z",
+    "createdAt": "2024-03-27T10:00:00Z"
+  },
+  {
+    "id": "q017",
+    "type": "variant",
+    "subjectId": "*",
+    "text": "Скільки лікарняних закладів функціонувало в Україні у 2022 році?",
+    "variants": [
+      {
+        "id": 1,
+        "text": "1,0 тис.",
+        "isCorrect": false
+      },
+      {
+        "id": 2,
+        "text": "1,2 тис.",
+        "isCorrect": false
+      },
+      {
+        "id": 3,
+        "text": "1,4 тис.",
+        "isCorrect": true
+      },
+      {
+        "id": 4,
+        "text": "1,6 тис.",
+        "isCorrect": false
+      }
+    ],
+    "updatedAt": "2024-03-27T10:00:00Z",
+    "createdAt": "2024-03-27T10:00:00Z"
+  },
+  {
+    "id": "q018",
+    "type": "variant",
+    "subjectId": "*",
+    "text": "Скільки бібліотек функціонувало в Україні у 2022 році?",
+    "variants": [
+      {
+        "id": 1,
+        "text": "13,5 тис.",
+        "isCorrect": true
+      },
+      {
+        "id": 2,
+        "text": "14,8 тис.",
+        "isCorrect": false
+      },
+      {
+        "id": 3,
+        "text": "16,1 тис.",
+        "isCorrect": false
+      },
+      {
+        "id": 4,
+        "text": "17,3 тис.",
+        "isCorrect": false
+      }
+    ],
+    "updatedAt": "2024-03-27T10:00:00Z",
+    "createdAt": "2024-03-27T10:00:00Z"
+  },
+  {
+    "id": "q019",
+    "type": "variant",
+    "subjectId": "*",
+    "text": "Який індекс споживчих цін був в Україні у 2022 році (до попереднього року, відсотків)?",
+    "variants": [
+      {
+        "id": 1,
+        "text": "109,4",
+        "isCorrect": false
+      },
+      {
+        "id": 2,
+        "text": "115,3",
+        "isCorrect": false
+      },
+      {
+        "id": 3,
+        "text": "120,2",
+        "isCorrect": true
+      },
+      {
+        "id": 4,
+        "text": "126,8",
+        "isCorrect": false
+      }
+    ],
+    "updatedAt": "2024-03-27T10:00:00Z",
+    "createdAt": "2024-03-27T10:00:00Z"
+  },
+  {
+    "id": "q020",
+    "type": "variant",
+    "subjectId": "*",
+    "text": "Скільки релігійних організацій було зареєстровано в Україні на 1 січня 2022 року?",
+    "variants": [
+      {
+        "id": 1,
+        "text": "23462",
+        "isCorrect": false
+      },
+      {
+        "id": 2,
+        "text": "25814",
+        "isCorrect": false
+      },
+      {
+        "id": 3,
+        "text": "28231",
+        "isCorrect": true
+      },
+      {
+        "id": 4,
+        "text": "30547",
+        "isCorrect": false
+      }
+    ],
+    "updatedAt": "2024-03-27T10:00:00Z",
+    "createdAt": "2024-03-27T10:00:00Z"
+  },
+  {
+    "id": "q021",
+    "type": "number",
+    "subjectId": "*",
+    "text": "Яким був номінальний ВВП України за 2022 рік (у млрд грн)?",
+    "numberAnswer": {
+      "value": 5191.0,
+      "units": "млрд грн"
+    },
+    "updatedAt": "2024-03-27T10:00:00Z",
+    "createdAt": "2024-03-27T10:00:00Z"
+  },
+  {
+    "id": "q022",
+    "type": "number",
+    "subjectId": "*",
+    "text": "Який відсоток скорочення реального ВВП України спостерігався у 2022 році (відсотків до попереднього року)?",
+    "numberAnswer": {
+      "value": 29.1,
+      "units": "%"
+    },
+    "updatedAt": "2024-03-27T10:00:00Z",
+    "createdAt": "2024-03-27T10:00:00Z"
+  },
+  {
+    "id": "q023",
+    "type": "number",
+    "subjectId": "*",
+    "text": "Скільки складала середньомісячна заробітна плата в Україні у 2022 році (у гривнях)?",
+    "numberAnswer": {
+      "value": 14847,
+      "units": "грн"
+    },
+    "updatedAt": "2024-03-27T10:00:00Z",
+    "createdAt": "2024-03-27T10:00:00Z"
+  },
+  {
+    "id": "q024",
+    "type": "number",
+    "subjectId": "*",
+    "text": "Яким був індекс промислової продукції в Україні у 2022 році (відсотків до попереднього року)?",
+    "numberAnswer": {
+      "value": 63.3,
+      "units": "%"
+    },
+    "updatedAt": "2024-03-27T10:00:00Z",
+    "createdAt": "2024-03-27T10:00:00Z"
+  },
+  {
+    "id": "q025",
+    "type": "number",
+    "subjectId": "*",
+    "text": "Яким був індекс сільськогосподарської продукції в Україні у 2022 році (відсотків до попереднього року)?",
+    "numberAnswer": {
+      "value": 75.0,
+      "units": "%"
+    },
+    "updatedAt": "2024-03-27T10:00:00Z",
+    "createdAt": "2024-03-27T10:00:00Z"
+  }
 ]

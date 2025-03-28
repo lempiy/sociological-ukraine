@@ -91,6 +91,7 @@
         gameData.currentPhase.status === 'answer' ||
         gameData.currentPhase.status === 'post-answer'
       "
+      [mapData]="mapData"
       [question]="gameData.currentPhase.question"
       [regionId]="gameData.currentPhase.regionId"
       [timeLeft]="gameData.rules.timeForAnswer"

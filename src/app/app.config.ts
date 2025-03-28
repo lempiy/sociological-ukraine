@@ -13,7 +13,7 @@ import { getFirestore, provideFirestore, connectFirestoreEmulator } from '@angul
 import { getFunctions, provideFunctions, connectFunctionsEmulator } from '@angular/fire/functions';
 
 // Nebular
-import { NbThemeModule, NbLayoutModule, NbButtonModule, NbAlertModule } from '@nebular/theme';
+import { NbThemeModule, NbLayoutModule, NbButtonModule, NbAlertModule, NbToastrModule } from '@nebular/theme';
 import { NbEvaIconsModule } from '@nebular/eva-icons';
 const fireConfig = { projectId: "sociology-ukraine", appId: "1:641142773910:web:8f13ed9be3fff9feb08ab7", storageBucket: "sociology-ukraine.firebasestorage.app", apiKey: "AIzaSyBRLoNDOQl1-yYB0IZHU09-EzL0bnuTDYQ", authDomain: "sociology-ukraine.firebaseapp.com", messagingSenderId: "641142773910" }
 
@@ -53,7 +53,8 @@ export const appConfig: ApplicationConfig = {
       NbLayoutModule,
       NbEvaIconsModule,
       NbButtonModule,
-      NbAlertModule
+      NbAlertModule,
+      NbToastrModule.forRoot(),
     )
   ]
 };
