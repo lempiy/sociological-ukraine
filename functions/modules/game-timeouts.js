@@ -333,46 +333,107 @@ function createFallbackQuestion(questionType, regionId) {
   }
 }
 
-/**
- * Handles timeout of "answer" phase
- */
 async function handleAnswerTimeout(gameId, gameData, updateData) {
-  // Check for winners
+  // Перевіряємо переможця
   const winners = checkWinners(gameData.currentPhase);
 
-  // Process result based on number of winners
+  // Оновлюємо лічильники правильних і неправильних відповідей
+  const updatedPlayers = [...gameData.players];
+
+  // Обробка активного гравця
+  if (gameData.currentPhase.activePlayerAnswer !== null) {
+    const activePlayerIndex = updatedPlayers.findIndex(
+      (player) => player.id === gameData.currentPhase.activePlayerId
+    );
+
+    if (activePlayerIndex !== -1) {
+      const isActivePlayerCorrect = winners.includes(
+        gameData.currentPhase.activePlayerId
+      );
+
+      if (isActivePlayerCorrect) {
+        updatedPlayers[activePlayerIndex].correctAnswers =
+          (updatedPlayers[activePlayerIndex].correctAnswers || 0) + 1;
+      } else {
+        updatedPlayers[activePlayerIndex].wrongAnswers =
+          (updatedPlayers[activePlayerIndex].wrongAnswers || 0) + 1;
+      }
+    }
+  } else {
+    // Якщо активний гравець не відповів, це вважається неправильною відповіддю
+    const activePlayerIndex = updatedPlayers.findIndex(
+      (player) => player.id === gameData.currentPhase.activePlayerId
+    );
+
+    if (activePlayerIndex !== -1) {
+      updatedPlayers[activePlayerIndex].wrongAnswers =
+        (updatedPlayers[activePlayerIndex].wrongAnswers || 0) + 1;
+    }
+  }
+
+  // Обробка гравця, чий регіон оскаржується (якщо такий є)
+  if (gameData.currentPhase.contestedPlayerId) {
+    const contestedPlayerIndex = updatedPlayers.findIndex(
+      (player) => player.id === gameData.currentPhase.contestedPlayerId
+    );
+
+    if (contestedPlayerIndex !== -1) {
+      if (gameData.currentPhase.contestedPlayerAnswer !== null) {
+        const isContestedPlayerCorrect = winners.includes(
+          gameData.currentPhase.contestedPlayerId
+        );
+
+        if (isContestedPlayerCorrect) {
+          updatedPlayers[contestedPlayerIndex].correctAnswers =
+            (updatedPlayers[contestedPlayerIndex].correctAnswers || 0) + 1;
+        } else {
+          updatedPlayers[contestedPlayerIndex].wrongAnswers =
+            (updatedPlayers[contestedPlayerIndex].wrongAnswers || 0) + 1;
+        }
+      } else {
+        // Якщо гравець не відповів, це вважається неправильною відповіддю
+        updatedPlayers[contestedPlayerIndex].wrongAnswers =
+          (updatedPlayers[contestedPlayerIndex].wrongAnswers || 0) + 1;
+      }
+    }
+  }
+
+  // Додаємо оновлених гравців до об'єкта оновлення
+  updateData.players = updatedPlayers;
+
+  // Обробляємо результат залежно від кількості переможців
   if (winners.length === 1) {
-    // One winner - region is colored in winner's color
+    // Один переможець - регіон зафарбовується у колір переможця
     const winnerId = winners[0];
     const mapStatus = { ...gameData.map.status };
     mapStatus[gameData.currentPhase.regionId] = winnerId;
     updateData["map.status"] = mapStatus;
   }
 
-  // Update current phase
+  // Оновлюємо поточну фазу
   updateData.currentPhase = {
     ...gameData.currentPhase,
-    status: PHASE_STATUS.POST_ANSWER,
+    status: "post-answer",
     startAt: FieldValue.serverTimestamp(),
-    // Add the map status after for reference
+    // Додаємо стан карти після відповіді для відображення на фронтенді
     mapStatusAfter: { ...gameData.map.status },
   };
 
-  // If the region was claimed, update the mapStatusAfter
+  // Якщо регіон був захоплений, оновлюємо mapStatusAfter
   if (winners.length === 1) {
     const winnerId = winners[0];
     updateData.currentPhase.mapStatusAfter[gameData.currentPhase.regionId] =
       winnerId;
   }
 
-  // Schedule timeout for post-answer phase
+  // Плануємо таймаут для фази post-answer
   const timeoutTaskId = await schedulePhaseTimeout(
     gameId,
     gameData.rules.timeForPostAnswer
   );
   updateData.currentPhase.timeoutTaskId = timeoutTaskId;
 
-  // Save updated data
+  // Зберігаємо оновлені дані
   await admin.firestore().collection("games").doc(gameId).update(updateData);
 }
 

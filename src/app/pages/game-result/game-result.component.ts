@@ -15,6 +15,8 @@ interface Player {
   isCreator: boolean;
   isWinner?: boolean;
   regionsCount?: number;
+  correctAnswers?: number,
+  wrongAnswers?: number,
 }
 
 @Component({

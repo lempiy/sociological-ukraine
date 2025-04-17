@@ -149,29 +149,29 @@ exports.setPlanningResult = functions
 exports.setAnswer = functions
   .region("europe-central2")
   .https.onCall(async (data, context) => {
-    // Authentication check
+    // Перевірка аутентифікації
     if (!context.auth) {
       throw new functions.https.HttpsError(
         "unauthenticated",
-        "Authentication is required to answer a question"
+        "Для відповіді на питання потрібна аутентифікація"
       );
     }
 
-    // Validate input parameters
+    // Валідація вхідних параметрів
     const { gameId, variant, number } = data;
 
     if (!gameId || (variant === undefined && number === undefined)) {
       throw new functions.https.HttpsError(
         "invalid-argument",
-        "Game ID or answer not specified"
+        "Не вказано ID гри або відповідь"
       );
     }
 
     try {
-      // Get user data
+      // Отримання даних користувача
       const userId = context.auth.uid;
 
-      // Get game data
+      // Отримання даних гри
       const gameDoc = await admin
         .firestore()
         .collection("games")
@@ -179,31 +179,28 @@ exports.setAnswer = functions
         .get();
 
       if (!gameDoc.exists) {
-        throw new functions.https.HttpsError("not-found", "Game not found");
+        throw new functions.https.HttpsError("not-found", "Гру не знайдено");
       }
 
       const gameData = gameDoc.data();
 
-      // Check game status
-      if (gameData.status !== GAME_STATUS.RUNNING) {
+      // Перевірка статусу гри
+      if (gameData.status !== "running") {
         throw new functions.https.HttpsError(
           "failed-precondition",
-          "Game is not active"
+          "Гра не активна"
         );
       }
 
-      // Check phase status
-      if (
-        !gameData.currentPhase ||
-        gameData.currentPhase.status !== PHASE_STATUS.ANSWER
-      ) {
+      // Перевірка статусу фази
+      if (!gameData.currentPhase || gameData.currentPhase.status !== "answer") {
         throw new functions.https.HttpsError(
           "failed-precondition",
-          "Not in answer stage"
+          "Зараз не стадія відповіді"
         );
       }
 
-      // Check if user is the active or contested player
+      // Перевірка, чи є користувач активним або оспорюючим гравцем
       const isActivePlayer = gameData.currentPhase.activePlayerId === userId;
       const isContestedPlayer =
         gameData.currentPhase.contestedPlayerId === userId;
@@ -211,15 +208,15 @@ exports.setAnswer = functions
       if (!isActivePlayer && !isContestedPlayer) {
         throw new functions.https.HttpsError(
           "permission-denied",
-          "You cannot answer this question"
+          "Ви не можете відповісти на це питання"
         );
       }
 
-      // Check if user has already answered
+      // Перевірка, чи не відповів гравець уже
       if (isActivePlayer && gameData.currentPhase.activePlayerAnswer !== null) {
         throw new functions.https.HttpsError(
           "failed-precondition",
-          "You already answered this question"
+          "Ви вже відповіли на це питання"
         );
       }
 
@@ -229,34 +226,32 @@ exports.setAnswer = functions
       ) {
         throw new functions.https.HttpsError(
           "failed-precondition",
-          "You already answered this question"
+          "Ви вже відповіли на це питання"
         );
       }
 
-      // Validate answer type according to question type
+      // Валідація типу відповіді відповідно до типу питання
       const questionType = gameData.currentPhase.question.type;
 
-      if (questionType === QUESTION_TYPE.VARIANT && variant === undefined) {
+      if (questionType === "variant" && variant === undefined) {
         throw new functions.https.HttpsError(
           "invalid-argument",
-          "For variant questions, you must specify variant ID"
+          "Для питання з варіантами потрібно вказати ID варіанту"
         );
       }
 
-      if (questionType === QUESTION_TYPE.NUMBER && number === undefined) {
+      if (questionType === "number" && number === undefined) {
         throw new functions.https.HttpsError(
           "invalid-argument",
-          "For numeric questions, you must specify a numeric answer"
+          "Для числового питання потрібно вказати числову відповідь"
         );
       }
 
-      // Create answer object
+      // Створення об'єкта відповіді
       const answer =
-        questionType === QUESTION_TYPE.VARIANT
-          ? { variant: variant }
-          : { number: number };
+        questionType === "variant" ? { variant: variant } : { number: number };
 
-      // Update current phase
+      // Оновлення поточної фази
       const updatedPhase = { ...gameData.currentPhase };
 
       if (isActivePlayer) {
@@ -265,57 +260,106 @@ exports.setAnswer = functions
         updatedPhase.contestedPlayerAnswer = answer;
       }
 
-      // Check if all required players have answered
+      // Перевірка, чи всі необхідні гравці відповіли
       const allPlayersAnswered =
         updatedPhase.activePlayerAnswer !== null &&
         (updatedPhase.contestedPlayerId === null ||
           updatedPhase.contestedPlayerAnswer !== null);
 
-      // Update game document
+      // Оновлення документа гри з першими змінами
       await admin.firestore().collection("games").doc(gameId).update({
         currentPhase: updatedPhase,
         updatedAt: FieldValue.serverTimestamp(),
       });
 
-      // If all players have answered, cancel timeout and process answers
+      // Якщо всі гравці відповіли, відміняємо таймаут і запускаємо обробку відповідей
       if (allPlayersAnswered) {
-        // Cancel timeout
+        // Скасування таймауту
         if (gameData.currentPhase.timeoutTaskId) {
           try {
             await cancelTimeoutTask(gameData.currentPhase.timeoutTaskId);
           } catch (error) {
             console.warn("Failed to cancel timeout task:", error);
-            // Continue execution even if cancellation fails
+            // Продовжуємо виконання навіть у разі помилки скасування
           }
         }
 
-        // Call answer processing logic manually
+        // Викликаємо логіку обробки відповідей
         const updateData = {
           updatedAt: FieldValue.serverTimestamp(),
         };
 
-        // Check for winners
+        // Перевіряємо переможця
         const winners = checkWinners(updatedPhase);
 
-        // Process result based on number of winners
+        // Оновлюємо лічильники правильних і неправильних відповідей
+        const updatedPlayers = [...gameData.players];
+
+        // Перевіряємо активного гравця
+        const activePlayerIndex = updatedPlayers.findIndex(
+          (player) => player.id === updatedPhase.activePlayerId
+        );
+
+        if (activePlayerIndex !== -1) {
+          const isActivePlayerCorrect = winners.includes(
+            updatedPhase.activePlayerId
+          );
+
+          if (isActivePlayerCorrect) {
+            updatedPlayers[activePlayerIndex].correctAnswers =
+              (updatedPlayers[activePlayerIndex].correctAnswers || 0) + 1;
+          } else {
+            updatedPlayers[activePlayerIndex].wrongAnswers =
+              (updatedPlayers[activePlayerIndex].wrongAnswers || 0) + 1;
+          }
+        }
+
+        // Перевіряємо гравця, чий регіон оскаржується (якщо такий є)
+        if (
+          updatedPhase.contestedPlayerId &&
+          updatedPhase.contestedPlayerAnswer !== null
+        ) {
+          const contestedPlayerIndex = updatedPlayers.findIndex(
+            (player) => player.id === updatedPhase.contestedPlayerId
+          );
+
+          if (contestedPlayerIndex !== -1) {
+            const isContestedPlayerCorrect = winners.includes(
+              updatedPhase.contestedPlayerId
+            );
+
+            if (isContestedPlayerCorrect) {
+              updatedPlayers[contestedPlayerIndex].correctAnswers =
+                (updatedPlayers[contestedPlayerIndex].correctAnswers || 0) + 1;
+            } else {
+              updatedPlayers[contestedPlayerIndex].wrongAnswers =
+                (updatedPlayers[contestedPlayerIndex].wrongAnswers || 0) + 1;
+            }
+          }
+        }
+
+        // Додаємо оновлених гравців до об'єкта оновлення
+        updateData.players = updatedPlayers;
+
+        // Обробляємо результат залежно від кількості переможців
         if (winners.length === 1) {
-          // One winner - region is colored in winner's color
+          // Один переможець - регіон зафарбовується у колір переможця
           const winnerId = winners[0];
           const mapStatus = { ...gameData.map.status };
           mapStatus[gameData.currentPhase.regionId] = winnerId;
           updateData["map.status"] = mapStatus;
         }
 
-        // Update current phase
+        // Оновлюємо поточну фазу
         updateData.currentPhase = {
           ...updatedPhase,
-          status: PHASE_STATUS.POST_ANSWER,
+          status: "post-answer",
           startAt: FieldValue.serverTimestamp(),
-          // Store the map status after the answer for reference in front-end
+          // Зберігаємо стан карти після відповіді для відображення на фронтенді
           mapStatusAfter: { ...gameData.map.status },
         };
 
-        // If the region was claimed, update the mapStatusAfter
+        // Якщо регіон був захоплений, оновлюємо mapStatusAfter
         if (winners.length === 1) {
           const winnerId = winners[0];
           updateData.currentPhase.mapStatusAfter[
@@ -323,14 +367,14 @@ exports.setAnswer = functions
           ] = winnerId;
         }
 
-        // Schedule timeout for post-answer phase
+        // Плануємо таймаут для фази post-answer
         const timeoutTaskId = await schedulePhaseTimeout(
           gameId,
           gameData.rules.timeForPostAnswer
         );
         updateData.currentPhase.timeoutTaskId = timeoutTaskId;
 
-        // Save updated data
+        // Зберігаємо оновлені дані
         await admin
           .firestore()
           .collection("games")
@@ -340,7 +384,7 @@ exports.setAnswer = functions
 
       return { success: true };
     } catch (error) {
-      console.error("Error answering question:", error);
+      console.error("Помилка відповіді на питання:", error);
 
       if (error instanceof functions.https.HttpsError) {
         throw error;
@@ -348,7 +392,7 @@ exports.setAnswer = functions
 
       throw new functions.https.HttpsError(
         "internal",
-        "Error while answering question"
+        "Помилка при відповіді на питання"
       );
     }
   });
